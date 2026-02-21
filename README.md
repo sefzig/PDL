@@ -1,6 +1,14 @@
-# PDL: Prompt Data Language
+# PDL
 
-One Prompt Data Language, two lightweight libraries (JS + Python), one set of shared fixtures, and small adapters you can paste into hosts like n8n. Everything here is source-first so we can evolve quickly before publishing packages.
+Prompt Data Language fuses a template and data to dynamically create Markdown. 
+
+Humans as well as AIs like well written language. 
+With PDL, you create natural language from data. 
+Use it to create pretty Markdown documents or to engineer your prompts.
+
+This repository contains a Javascript and a Python library to integrate PDL into your app. 
+Adjust them, test them, and make scripts build your adapters for n8n and Langflow.
+
 
 ## Structure
 
