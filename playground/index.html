@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PDL Playground</title>
+  <link rel="stylesheet" href="css/index.css" />
+  <style>
+    /* Playground-specific layout on top of provided CSS */
+    .playground-shell { display: grid; grid-template-rows: 48px 1fr; min-height: 100vh; }
+    .pg-header { position: sticky; top: 0; z-index: 90; height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 12px; background: var(--color-bg-header); border-bottom: 1px solid var(--color-border-subtle); }
+    .pg-title { font-weight: 600; }
+    .pg-select, .pg-button { height: 30px; border-radius: 6px; border: 1px solid var(--color-input-border); background: var(--color-input-bg); color: var(--color-text-main); padding: 4px 10px; }
+    .pg-button { cursor: pointer; }
+    .pg-button.primary { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); }
+    .pg-main { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+    .pg-panel { min-height: 0; display: flex; flex-direction: column; }
+    .pg-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-bg-header); }
+    .pg-panel-body { flex: 1 1 auto; min-height: 0; }
+    #editor { height: calc(100vh - 48px - 40px); }
+    #rendered { height: calc(100vh - 48px - 40px); overflow: auto; padding: 24px 28px; box-sizing: border-box; }
+    .pg-toolbar { display: flex; gap: 8px; align-items: center; }
+    .pg-status { font-size: 12px; color: var(--color-text-muted); }
+    .fold-toggle { cursor: pointer; }
+    @media (max-width: 1100px) { .pg-main { grid-template-columns: 1fr; } #editor, #rendered { height: calc(50vh - 24px); } }
+  </style>
+</head>
+<body>
+  <div class="playground-shell">
+    <header class="pg-header">
+      <div class="pg-title">PDL Playground</div>
+      <select id="fixtureSelect" class="pg-select"></select>
+      <button id="newFixture" class="pg-button">New from hello-world</button>
+      <div class="pg-toolbar" style="margin-left:auto; gap:6px;">
+        <button id="exportBtn" class="pg-button">Export</button>
+        <button id="themeToggle" class="pg-button">Toggle Theme</button>
+        <span id="status" class="pg-status"></span>
+      </div>
+    </header>
+    <main class="pg-main">
+      <section class="pg-panel">
+        <div class="pg-panel-header">
+          <div>Template (Monaco + PDL language)</div>
+          <div class="pg-toolbar">
+            <label><input type="checkbox" id="autoRender" checked /> Auto render</label>
+          </div>
+        </div>
+        <div id="editor" aria-label="PDL template editor"></div>
+      </section>
+      <section class="pg-panel">
+        <div class="pg-panel-header">
+          <div>Rendered Markdown</div>
+          <div class="pg-toolbar">
+            <button id="renderNow" class="pg-button">Render now</button>
+            <label><input type="checkbox" id="foldSync" /> Heading fold sync (beta)</label>
+          </div>
+        </div>
+        <div id="rendered"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Use jsDelivr without SRI to avoid integrity mismatches in sandboxed/offline contexts -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+  <script>
+    window.require = { paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } };
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script src="../dist/browser.js"></script>
+  <script src="js/index.js"></script>
+</body>
+</html>

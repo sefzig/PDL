@@ -11,7 +11,7 @@ Lines that contain PDL (like `[directive:...]`) end with `// "expected output"` 
 
 
 // =================================================
-## Global Variables ✔
+## Global Variables
 // =================================================
 
 _Before we dive in, let's understand how dynamic PDL is._
@@ -26,13 +26,13 @@ _This template will make extensive use of this, so watch out for the curly brace
 
 
 // =================================================
-## Directive: Value ✔
+## Directive: Value
 // =================================================
 
 _We begin by retrieving the facts needed for the briefing._
 
 // -------------------------------------------------
-### Value retrieval ✔
+### Value retrieval
 // -------------------------------------------------
 
 *Read a field directly from the data.*
@@ -44,7 +44,7 @@ We can also provide a path:
 * If `{Product}` doesn't work, we will advertise the `[value:release.hero.fallback]`. // "Widget"
 
 // -------------------------------------------------
-### Filtering values ✔
+### Filtering values
 // -------------------------------------------------
 
 *Select the first item that matches a condition.*
@@ -67,7 +67,7 @@ Case-insensitive matching:
 * And so does wIdGeT: `[value:products[name="wIdGeT" ci].name]`. // "Widget"
 
 // -------------------------------------------------
-### Nested values ✔
+### Nested values
 // -------------------------------------------------
 
 *Resolve one value inside another when data depends on data.*
@@ -79,7 +79,7 @@ And so can PDL values:
 * But if `{Product}` is broken, we recommend the `[value:release.hero.fallback]` for `[value:products[name=[value:release.hero.fallback]].price]`€. // "Widget"; "10"
 
 // -------------------------------------------------
-### Unresolved values ✔
+### Unresolved values
 // -------------------------------------------------
 
 *When a path cannot be resolved, behavior is explicit.*
@@ -97,7 +97,7 @@ If nothing resolves, we will use a failure value:
 * `[value:missing.key fallback=another.missing.key failure="We are missing data here."]` // "We are missing data here."
 
 // -------------------------------------------------
-### Existence checks ✔
+### Existence checks
 // -------------------------------------------------
 
 *Sometimes we only need to know whether the original path resolves.*
@@ -113,7 +113,7 @@ The fallback path might help:
 * A missing key `[value:missing.key fallback=another.missing.key success="exists" failure="is missing"]`. // "is missing"
 
 // -------------------------------------------------
-### Selector variants ✔
+### Selector variants
 // -------------------------------------------------
 
 *Selectors support different comparisons and matching styles.*
@@ -129,7 +129,7 @@ Sometimes the path becomes more complex:
 * ...because the product is `[value:release.campaign.taglineWrap.tagline]`. // "Future-ready"
 
 // -------------------------------------------------
-### Replacing values ✔
+### Replacing values
 // -------------------------------------------------
 
 *Before publishing, we might want to adjust the wording.*
@@ -147,7 +147,7 @@ Or we use Regex for total freedom:
 * Let us emphasize the product is `[value:family replace="s/Digital/**digital**/"]`. // "**Digital**"
 
 // -------------------------------------------------
-### Formatting strings ✔
+### Formatting strings
 // -------------------------------------------------
 
 _Also, we will make sure the presentation is well formatted._
@@ -177,7 +177,7 @@ But we cannot truncate numbers:
 * `[value:products[name=Screen].price truncate=1 suffix="?"]` // "30"
 
 // -------------------------------------------------
-### Formatting date and time ✔
+### Formatting date and time
 // -------------------------------------------------
 
 *Temporal values can be formatted explicitly and consistently.*
@@ -198,7 +198,7 @@ Invalid inputs remain explicit:
 * `[value:release.launch.dateUtc format="%Y"]` // "[invalid time]"
 
 // -------------------------------------------------
-### Formatting data ✔
+### Formatting data
 // -------------------------------------------------
 
 _JSON and Markdown are snowflakes and need careful handling._
@@ -214,13 +214,13 @@ When needed, values can be rendered as stringified JSON:
 * `[value:products[name=Demo].locations stringify=true]` // Stringified array
 
 // =================================================
-## Directive: Conditional ✔
+## Directive: Conditional
 // =================================================
 
 _Conditions allow the briefing to adapt to the data._
 
 // -------------------------------------------------
-### Choosing a branch ✔
+### Choosing a branch
 // -------------------------------------------------
 
 _Select a statement depending on the facts._
@@ -240,7 +240,7 @@ Price assessment for `{Product}`:
 [if-end]
 
 // -------------------------------------------------
-### Inline decisions ✔
+### Inline decisions
 // -------------------------------------------------
 
 _Conditions can control individual words inside a sentence._
@@ -252,7 +252,7 @@ Also, we can use the global variables for that:
 * Including `{Product}` in the campaign `[if:products[name={Product}].price>0]makes sense[if-else]requires reconsideration[if-end]`. // "makes sense"
 
 // -------------------------------------------------
-### Checking existence ✔
+### Checking existence
 // -------------------------------------------------
 
 _When no operator is given, existence is evaluated._
@@ -267,7 +267,7 @@ Conditional branches can be stacked with if-elif:
 * But a product from the same family `[if:missing.key]is available[if-elif:family]may be available[if-else]is not available[if-end]`. // "may be available"
 
 // -------------------------------------------------
-### Comparing numbers ✔
+### Comparing numbers
 // -------------------------------------------------
 
 _Numeric comparisons integrate directly into language._
@@ -285,7 +285,7 @@ Values that look numeric are compared numerically:
 * The stored price `"30"` `[if:products[name={Product}].price="30"]matches[if-else]differs from[if-end]` the numeric value 30. // "matches"
 
 // -------------------------------------------------
-### Comparing text ✔
+### Comparing text
 // -------------------------------------------------
 
 _Text comparisons shape positioning._
@@ -297,7 +297,7 @@ We will compare whether the product name matches in various ways:
 * Case-insensitive comparison `[if:family="digital" ci=true]recognizes[if-else]ignores[if-end]` lowercase input. // "recognizes"
 
 // -------------------------------------------------
-### Nesting conditions ✔
+### Nesting conditions
 // -------------------------------------------------
 
 _Conditions can refine each other._
@@ -312,7 +312,7 @@ _Conditions can refine each other._
 [if-end]
 
 // -------------------------------------------------
-### Handling whitespace ✔
+### Handling whitespace
 // -------------------------------------------------
 
 _When no branch produces output, spacing adjusts automatically._
@@ -325,13 +325,13 @@ This list remains clean:
 - Second item.
 
 // =================================================
-## Directive: Loop ✔
+## Directive: Loop
 // =================================================
 
 _When multiple entries exist, repetition is handled declaratively._
 
 // -------------------------------------------------
-### Listing items ✔
+### Listing items
 // -------------------------------------------------
 
 _Generate structured content from collections._
@@ -345,7 +345,7 @@ A compact overview:
 * The portfolio consists of `[loop:products as=product join=", "][value:product.name][loop-end]`. // "Demo, Screen, Widget"
 
 // -------------------------------------------------
-### Filtering lists ✔
+### Filtering lists
 // -------------------------------------------------
 
 _Conditions narrow the selection before repetition._
@@ -359,7 +359,7 @@ A compact overview:
 * The portfolio consists of `[loop:products[price>0] as=product join=", "][value:product.name][loop-end]`. // "Screen, Widget"
 
 // -------------------------------------------------
-### Nested lists ✔
+### Nested lists
 // -------------------------------------------------
 
 _Structure can mirror data depth._
@@ -373,7 +373,7 @@ Each product is available in:
 [loop-end]
 
 // -------------------------------------------------
-### Using the index ✔
+### Using the index
 // -------------------------------------------------
 
 _An index reflects position automatically._
@@ -384,13 +384,13 @@ Ordered overview:
 [loop-end]
 
 // =================================================
-## Directive: Get/Set ✔
+## Directive: Get/Set
 // =================================================
 
 _Variables allow structured decisions within the template._
 
 // -------------------------------------------------
-### Defining variables ✔
+### Defining variables
 // -------------------------------------------------
 
 _Variables are constant unless declared otherwise._
@@ -402,7 +402,7 @@ We try to overwrite the local variable: [set:headline="Revised Launch"]
 * The headline still reads `[get:headline]`. // "Screen Launch"
 
 // -------------------------------------------------
-### Variable lists ✔
+### Variable lists
 // -------------------------------------------------
 
 _Variables can store collections._
@@ -411,7 +411,7 @@ We define a local variable with a list: [set:channels=["Web","Email"]]
 * The campaign runs across `[loop:channels as=channel join=" and "][value:channel][loop-end]`. // "Web and Email"
 
 // -------------------------------------------------
-### Formatting variables ✔
+### Formatting variables
 // -------------------------------------------------
 
 _Formatting applies at retrieval time._
@@ -420,7 +420,7 @@ We define a malformed label: [set:label="  digital  "]
 * The label however is formated as `[get:label trim=true title=true]`. // "Digital"
 
 // -------------------------------------------------
-### Humble variables ✔
+### Humble variables
 // -------------------------------------------------
 
 _A humble variable defers to existing data._
@@ -432,7 +432,7 @@ But only if configured as non-humble: [set:family="Digital" humble=false]
 * The updated family setting shows as `[value:family]`. // "Digital"
 
 // -------------------------------------------------
-### Scoped variables ✔
+### Scoped variables
 // -------------------------------------------------
 
 _A scoped variable exists only within its block._
@@ -446,7 +446,7 @@ Here are scoped variables in a loop:
 Outside the loop, the scoped variable `[get:temp failure="is no longer available"]`. // "is no longer available"
 
 // -------------------------------------------------
-### Variables in conditions ✔
+### Variables in conditions
 // -------------------------------------------------
 
 _Variables can guide conditional output._
@@ -459,7 +459,7 @@ We can compare variable values as if they were paths:
 [if-end]
 
 // -------------------------------------------------
-### Edge behavior ✔
+### Edge behavior
 // -------------------------------------------------
 
 _Subtle precedence rules remain explicit._
@@ -472,13 +472,13 @@ Non-constant variables can be nullified: [set:feature=null]
 
 
 // =================================================
-## Miscellaneous ✔
+## Miscellaneous
 // =================================================
 
 _Smaller features refine presentation and boundaries._
 
 // -------------------------------------------------
-### Condensing text ✔
+### Condensing text
 // -------------------------------------------------
 
 _Condense tightens whitespace and punctuation._
@@ -489,7 +489,7 @@ This is the final headline:
 [condense-end]
 
 // -------------------------------------------------
-### Performance limits ✔
+### Performance limits
 // -------------------------------------------------
 
 _Expansion limits ensure predictable rendering._
@@ -499,7 +499,7 @@ _Expansion limits ensure predictable rendering._
 _To keep this demo concise, we do not repeat 50 times..._
 
 // -------------------------------------------------
-### Comments ✔
+### Comments
 // -------------------------------------------------
 
 _Comments are ignored outside code blocks._

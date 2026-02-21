@@ -60,6 +60,11 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 - Run all JS fixtures: `make run js`
 - Run a single JS fixture: `make run js 01`
 
+## Playground build
+
+- Build the browser bundle + fixtures manifest for the playground: `make build browser`
+- Open `playground/index.html` in a browser (loads `dist/browser.js` and `playground/fixtures.json`)
+
 ## Golden output
 
 - Deterministic tests (JS only): `make test js` or `make test js 01`
