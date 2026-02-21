@@ -9,7 +9,7 @@ It is structured with named fields, nested objects, and lists.
 The sections below are grouped by capability.
 Lines that contain PDL (like `[directive:...]`) end with `// "expected output"` so you can verify the result as you read.
 
-## Global Variables ✔
+## Global Variables
 
 _Before we dive in, let's understand how dynamic PDL is._
 
@@ -19,13 +19,13 @@ Any automation can inject global variables:
 Any word in curly braces is a candidate for a global variable. 
 If it exists in `.variable.json`, it will be replaced before PDL is processed.
 
-This template will make extensive use of this, so watch out for the curly braces!_
+_This template will make extensive use of this, so watch out for the curly braces!_
 
-## Directive: Value ✔
+## Directive: Value
 
 _We begin by retrieving the facts needed for the briefing._
 
-### Value retrieval ✔
+### Value retrieval
 
 *Read a field directly from the data.*
 
@@ -35,12 +35,12 @@ Let's get a value from the data by providing its key:
 We can also provide a path:
 * If `Screen` doesn't work, we will advertise the `Widget`.
 
-### Filtering values ✔
+### Filtering values
 
 *Select the first item that matches a condition.*
 
 Filtered by number:
-* The cheapest priced product is `Widget`.
+* The first paid product is `Widget`.
 * The product that costs 30€ is `Screen`.
 
 Filtered by name:
@@ -56,7 +56,7 @@ Case-insensitive matching:
 * And a Widget stays a `Widget`.
 * And so does wIdGeT: `[value:products[name="wIdGeT" ci].name]`.
 
-### Nested values ✔
+### Nested values
 
 *Resolve one value inside another when data depends on data.*
 
@@ -66,7 +66,7 @@ Global variables can live inside directives:
 And so can PDL values:
 * But if `Screen` is broken, we recommend the `Widget` for `10`€.
 
-### Unresolved values ✔
+### Unresolved values
 
 *When a path cannot be resolved, behavior is explicit.*
 
@@ -82,7 +82,7 @@ The fallback can be a nested path:
 If nothing resolves, we will use a failure value:
 * `We are missing data here.`
 
-### Existence checks ✔
+### Existence checks
 
 *Sometimes we only need to know whether the original path resolves.*
 
@@ -96,7 +96,7 @@ The fallback path might help:
 * The family `exists`.
 * A missing key `is missing`.
 
-### Selector variants ✔
+### Selector variants
 
 *Selectors support different comparisons and matching styles.*
 
@@ -106,11 +106,11 @@ PDL supports most common operators:
 * Name starting with "Wid" (`^=`): `Widget`
 * Name ending with "get" (`$=`): `Widget`
 
-Eventually the path is complicated:
+Sometimes the path becomes more complex:
 * We will spend `120000`€ on ads...
 * ...because the product is `Future-ready`.
 
-### Replacing values ✔
+### Replacing values
 
 *Before publishing, we might want to adjust the wording.*
 
@@ -126,7 +126,7 @@ We can keep this flexible too:
 Or we use Regex for total freedom:
 * Let us emphasize the product is `**digital**`.
 
-### Formatting strings ✔
+### Formatting strings
 
 _Also, we will make sure the presentation is well formatted._
 
@@ -154,7 +154,7 @@ We can truncate with an ellipsis too:
 But we cannot truncate numbers:
 * `30`
 
-### Formatting date and time ✔
+### Formatting date and time
 
 *Temporal values can be formatted explicitly and consistently.*
 
@@ -173,7 +173,7 @@ Invalid inputs remain explicit:
 * `[invalid time]`
 * `2026-02-06T10:00:00Z`
 
-### Formatting data ✔
+### Formatting data
 
 _JSON and Markdown are snowflakes and need careful handling._
 
@@ -187,11 +187,11 @@ When needed, values can be rendered as stringified JSON:
 * `{"name":"Demo","price":0,"locations":["Hamburg","München"]}`
 * `["Hamburg","München"]`
 
-## Directive: Conditional ✔
+## Directive: Conditional
 
 _Conditions allow the briefing to adapt to the data._
 
-### Choosing a branch ✔
+### Choosing a branch
 
 _Select a statement depending on the facts._
 
@@ -199,7 +199,7 @@ Price assessment for `Screen`:
 
 - The `Screen` is positioned as a premium product.
 
-### Inline decisions ✔
+### Inline decisions
 
 _Conditions can control individual words inside a sentence._
 
@@ -209,7 +209,7 @@ We can use the comparisons as in the value directive:
 Also, we can use the global variables for that:
 * Including `Screen` in the campaign `makes sense`.
 
-### Checking existence ✔
+### Checking existence
 
 _When no operator is given, existence is evaluated._
 
@@ -222,11 +222,11 @@ If a condition is not met, the else branch is printed:
 Conditional branches can be stacked with if-elif:
 * But a product from the same family `may be available`.
 
-### Comparing numbers ✔
+### Comparing numbers
 
 _Numeric comparisons integrate directly into language._
 
-Let us check whether a price is an exact number:
+Let us check whether the price equals a specific value:
 * The Screen `costs exactly` 30€.
 
 Let us check whether a price is higher:
@@ -238,7 +238,7 @@ Let us check whether a price is lower:
 Values that look numeric are compared numerically:
 * The stored price `"30"` `matches` the numeric value 30.
 
-### Comparing text ✔
+### Comparing text
 
 _Text comparisons shape positioning._
 
@@ -248,14 +248,14 @@ We will compare whether the product name matches in various ways:
 * The family description `contains` the fragment “git”.
 * Case-insensitive comparison `recognizes` lowercase input.
 
-### Nesting conditions ✔
+### Nesting conditions
 
 _Conditions can refine each other._
 
 - `Screen` differs from the fallback.
 - Nevertheless, it remains commercially available.
 
-### Handling whitespace ✔
+### Handling whitespace
 
 _When no branch produces output, spacing adjusts automatically._
 
@@ -263,11 +263,11 @@ This list remains clean:
 - First item.
 - Second item.
 
-## Directive: Loop ✔
+## Directive: Loop
 
 _When multiple entries exist, repetition is handled declaratively._
 
-### Listing items ✔
+### Listing items
 
 _Generate structured content from collections._
 
@@ -279,7 +279,7 @@ The launch briefing includes:
 A compact overview:
 * The portfolio consists of `Demo, Widget, Screen`.
 
-### Filtering lists ✔
+### Filtering lists
 
 _Conditions narrow the selection before repetition._
 
@@ -290,7 +290,7 @@ The paid products are:
 A compact overview:
 * The portfolio consists of `Widget, Screen`.
 
-### Nested lists ✔
+### Nested lists
 
 _Structure can mirror data depth._
 
@@ -305,7 +305,7 @@ Each product is available in:
   - Market: `Berlin`
   - Market: `Hamburg`
 
-### Using the index ✔
+### Using the index
 
 _An index reflects position automatically._
 
@@ -314,11 +314,11 @@ Ordered overview:
 - Position `2`: `Widget`
 - Position `3`: `Screen`
 
-## Directive: Get/Set ✔
+## Directive: Get/Set
 
 _Variables allow structured decisions within the template._
 
-### Defining variables ✔
+### Defining variables
 
 _Variables are constant unless declared otherwise._
 
@@ -328,21 +328,21 @@ We compute and set a local variable:
 We try to overwrite the local variable: 
 * The headline still reads `Screen Launch`.
 
-### Variable lists ✔
+### Variable lists
 
 _Variables can store collections._
 
 We define a local variable with a list: 
 * The campaign runs across `Web and Email`.
 
-### Formatting variables ✔
+### Formatting variables
 
 _Formatting applies at retrieval time._
 
 We define a malformed label: 
 * The label however is formated as `Digital`.
 
-### Humble variables ✔
+### Humble variables
 
 _A humble variable defers to existing data._
 
@@ -352,25 +352,28 @@ Variables can be configured to be writable:
 But only if configured as non-humble: 
 * The updated family setting shows as `Digital`.
 
-### Scoped variables ✔
+### Scoped variables
 
 _A scoped variable exists only within its block._
 
 Here are scoped variables in a loop:
+
 - Reviewing `Demo` in detail.
+
 - Reviewing `Widget` in detail.
+
 - Reviewing `Screen` in detail.
 
 Outside the loop, the scoped variable `is no longer available`.
 
-### Variables in conditions ✔
+### Variables in conditions
 
 _Variables can guide conditional output._
 
 We can compare variable values as if they were paths:
 - The headline aligns with the globally selected product.
 
-### Edge behavior ✔
+### Edge behavior
 
 _Subtle precedence rules remain explicit._
 
@@ -380,33 +383,33 @@ We set a variable twice, but make it non-constant:
 Non-constant variables can be nullified: 
 - The feature is `gone` now.
 
-## Miscellaneous ✔
+## Miscellaneous
 
 _Smaller features refine presentation and boundaries._
 
-### Condensing text ✔
+### Condensing text
 
 _Condense tightens whitespace and punctuation._
 
 This is the final headline:
 - Launch, ready!
 
-### Performance limits ✔
+### Performance limits
 
 _Expansion limits ensure predictable rendering._
 
 * The family name repeated five times becomes `Digital Digital Digital Digital Digital`.
 
-_To not crush this demo, we do not repeat 50 times..._
+_To keep this demo concise, we do not repeat 50 times..._
 
-### Comments ✔
+### Comments
 
 _Comments are ignored outside code blocks._
 
 To remind ourselves of information, we can comment inline
 * Text
 
-Which does not harm common syntax like urls and math:
+Which does not interfere with URLs or other expressions containing double slashes:
 * http://example.com//path
 * a//b
 

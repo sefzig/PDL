@@ -5,16 +5,23 @@
   const exportBtn = document.getElementById('exportBtn');
   const themeToggle = document.getElementById('themeToggle');
   const statusEl = document.getElementById('status');
-  const autoRenderEl = document.getElementById('autoRender');
   const foldSyncEl = document.getElementById('foldSync');
-  const renderNowBtn = document.getElementById('renderNow');
+  const lowPowerEl = document.getElementById('lowPower');
 
+  const THEME_KEY = 'aimsHub:theme'; // values: light | dark | system
+  
   const md = window.markdownit({ html: false, linkify: false, typographer: true });
   let fixtures = [];
   let editor = null;
   let currentFixture = null;
   let monacoInstance = null;
   let renderTimer = null;
+  let pendingRenderScroll = false;
+  let pendingEditorScroll = false;
+  let lowPower = false;
+  let renderScrollTimer = null;
+  let editorScrollTimer = null;
+let isRendering = false;
   let headingNodes = [];
   const syncLock = { fromEditor: false, fromRender: false };
   let ignoreRenderScroll = false;
@@ -25,7 +32,7 @@
   let mapTplToMd = [];
   let anchorMd = [];
   let anchorTpl = [];
-
+  
   async function loadFixtures() {
     const res = await fetch(`fixtures.json?_=${Date.now()}`);
     const json = await res.json();
@@ -42,18 +49,19 @@
       fixtureSelect.appendChild(opt);
     });
     if (fixtures.length) {
-      selectFixture(fixtures[0].name);
+      const target = getHashFixture() || fixtures[0].name;
+      selectFixture(target);
     }
   }
 
   function selectFixture(name) {
     const fixture = fixtures.find((f) => f.name === name);
     if (!fixture) return;
-    console.log('[fixture]', name, 'template len', (fixture.template || '').length, 'data keys', Object.keys(fixture.data || {}).length);
     currentFixture = fixture;
     fixtureSelect.value = name;
     setEditorValue(fixture.template || '');
     scheduleRender();
+    updateHash(name);
   }
 
   function setEditorValue(text) {
@@ -64,16 +72,15 @@
   }
 
   function scheduleRender() {
-    if (!autoRenderEl.checked) return;
     clearTimeout(renderTimer);
-    renderTimer = setTimeout(render, 200);
+    renderTimer = setTimeout(render, 400);
   }
 
   function render() {
-    if (!currentFixture) return;
+    if (!currentFixture || isRendering) return;
+    isRendering = true;
     const template = editor ? editor.getValue() : '';
     let html = '';
-    let foldedAnchors = [];
     let markdown = '';
     let renderResult = null;
     try {
@@ -81,23 +88,21 @@
       markdown = renderResult.markdown || '';
       statusEl.textContent = `rendered (${markdown.length} chars)`;
 
-      // Debug markers: show the first/last 200 chars in console to detect truncation
-      console.log('[render] first 200:', markdown.slice(0, 200));
-      console.log('[render] last 200:', markdown.slice(-200));
-
       html = md.render(markdown);
       foldedAnchors = collectHeadingAnchors(markdown);
     } catch (err) {
       console.error(err);
       html = `<pre style="color: var(--color-error-text);">${escapeHtml(err.message || err)}</pre>`;
       statusEl.textContent = 'error';
+    } finally {
+      isRendering = false;
     }
     renderedEl.innerHTML = html;
     headingNodes = Array.from(renderedEl.querySelectorAll('h1, h2, h3, h4, h5, h6'));
     if (renderResult) {
       buildHeadingMaps(template, markdown, editor);
     }
-    enableHeadingFolding(foldedAnchors);
+    isRendering = false;
   }
 
   function collectHeadingAnchors(markdown) {
@@ -169,6 +174,7 @@
   function setupMonaco() {
     window.require(['vs/editor/editor.main'], () => {
       monacoInstance = window.monaco;
+      defineMonacoThemes(monacoInstance);
       registerPDLLanguage(monacoInstance);
       const model = monacoInstance.editor.createModel('', 'pdl');
       editor = monacoInstance.editor.create(document.getElementById('editor'), {
@@ -179,14 +185,24 @@
         fontSize: 14,
         wordWrap: 'off',
         folding: true,
+        glyphMargin: true,
+        lineNumbersMinChars: 3,
+        lineDecorationsWidth: 12,
+        padding: { top: 8, bottom: 24 },
         scrollbar: { verticalScrollbarSize: 10 },
       });
+      applyTheme(monacoInstance);
       editor.getModel().onDidChangeContent(scheduleRender);
       editor.onDidScrollChange(() => {
-        if (syncLock.fromRender) return;
-        syncLock.fromEditor = true;
-        syncRenderToEditor();
-        syncLock.fromEditor = false;
+        if (syncLock.fromRender || pendingEditorScroll) return;
+        pendingEditorScroll = true;
+        requestAnimationFrame(() => {
+          pendingEditorScroll = false;
+          if (syncLock.fromRender) return;
+          syncLock.fromEditor = true;
+          syncRenderToEditor();
+          syncLock.fromEditor = false;
+        });
       });
       loadFixtures();
     });
@@ -209,6 +225,7 @@
           [/\[condense\]/, 'keyword'],
           [/\[condense-end\]/, 'keyword'],
           [/\{[^}]+\}/, 'variable'],
+          [/\/\/.*$/, 'comment'],
         ],
       },
     });
@@ -239,24 +256,6 @@
           range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
           contents: [{ value: info }],
         };
-      },
-    });
-
-    monaco.languages.registerDocumentSemanticTokensProvider('pdl', {
-      getLegend: () => ({ tokenTypes: ['keyword', 'variable'], tokenModifiers: [] }),
-      provideDocumentSemanticTokens: (model) => {
-        const lines = model.getLinesContent();
-        const data = [];
-        lines.forEach((line, i) => {
-          const regex = /\[([a-z-]+):/g;
-          let m;
-          while ((m = regex.exec(line))) {
-            const start = m.index + 1;
-            const len = m[1].length;
-            data.push(i, start, len, 0, 0);
-          }
-        });
-        return { data: new Uint32Array(data) };
       },
     });
 
@@ -308,18 +307,120 @@
       URL.revokeObjectURL(url);
     });
     themeToggle.addEventListener('click', () => {
-      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
+      const currentPref = loadThemePreference();
+      const nextPref = currentPref === 'dark' ? 'light' : currentPref === 'light' ? 'dark' : 'light';
+      saveThemePreference(nextPref);
+      applyDocumentTheme(nextPref);
     });
-    autoRenderEl.addEventListener('change', () => autoRenderEl.checked && render());
     foldSyncEl.addEventListener('change', render);
-    renderNowBtn.addEventListener('click', render);
-    renderedEl.addEventListener('scroll', () => {
-      if (syncLock.fromEditor || ignoreRenderScroll) return;
-      syncLock.fromRender = true;
-      syncEditorToRender();
-      syncLock.fromRender = false;
+    lowPowerEl.addEventListener('change', () => {
+      lowPower = lowPowerEl.checked;
+      applyLowPower();
     });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        render();
+      }
+    });
+    window.addEventListener('hashchange', () => {
+      const target = getHashFixture();
+      if (target && target !== (currentFixture && currentFixture.name)) {
+        selectFixture(target);
+      }
+    });
+    renderedEl.addEventListener('scroll', () => {
+      if (syncLock.fromEditor || ignoreRenderScroll || pendingRenderScroll) return;
+      pendingRenderScroll = true;
+      requestAnimationFrame(() => {
+        pendingRenderScroll = false;
+        if (syncLock.fromEditor || ignoreRenderScroll) return;
+        syncLock.fromRender = true;
+        syncEditorToRender();
+        syncLock.fromRender = false;
+      });
+    }, { passive: true });
+  }
+
+  function defineMonacoThemes(monaco) {
+    monaco.editor.defineTheme('pdl-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '006569', fontStyle: 'bold' },
+        { token: 'variable', foreground: '5e6c84' },
+        { token: 'comment', foreground: '888888' },
+      ],
+      colors: {
+        'editor.background': '#f4f5f7',
+        'editor.foreground': '#172b4d',
+        'editorLineNumber.foreground': '#5e6c84',
+        'editorLineNumber.activeForeground': '#172b4d',
+        'editor.lineHighlightBackground': '#e9ebf0',
+        'editor.selectionBackground': '#cce5e6',
+        'editor.inactiveSelectionBackground': '#e1e7ec',
+        'editorGutter.background': '#f4f5f7',
+        'scrollbarSlider.background': '#00000026',
+        'scrollbarSlider.hoverBackground': '#00000040',
+        'scrollbarSlider.activeBackground': '#00000059',
+      },
+    });
+
+    monaco.editor.defineTheme('pdl-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '6eedda', fontStyle: 'bold' },
+        { token: 'variable', foreground: 'c1c7d0' },
+        { token: 'comment', foreground: '888888' },
+      ],
+      colors: {
+        'editor.background': '#1b1d21',
+        'editor.foreground': '#f4f5f7',
+        'editorLineNumber.foreground': '#c1c7d0',
+        'editorLineNumber.activeForeground': '#f4f5f7',
+        'editor.lineHighlightBackground': '#2c2f36',
+        'editor.selectionBackground': '#2a4f56',
+        'editor.inactiveSelectionBackground': '#23272d',
+        'editorGutter.background': '#1b1d21',
+        'scrollbarSlider.background': '#ffffff1f',
+        'scrollbarSlider.hoverBackground': '#ffffff33',
+        'scrollbarSlider.activeBackground': '#ffffff47',
+      },
+    });
+  }
+
+  function applyTheme(monaco) {
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'pdl-dark' : 'pdl-light';
+    monaco.editor.setTheme(theme);
+    applyLowPower();
+  }
+
+  function applyLowPower() {
+    if (!editor) return;
+    if (lowPower) {
+      editor.updateOptions({
+        hover: { enabled: false },
+        quickSuggestions: false,
+        suggestOnTriggerCharacters: false,
+        parameterHints: { enabled: false },
+        folding: true,
+        glyphMargin: true,
+        lineNumbersMinChars: 3,
+        lineDecorationsWidth: 12,
+      });
+    } else {
+      editor.updateOptions({
+        hover: { enabled: true },
+        quickSuggestions: true,
+        suggestOnTriggerCharacters: true,
+        parameterHints: { enabled: true },
+        folding: true,
+        glyphMargin: true,
+        lineNumbersMinChars: 3,
+        lineDecorationsWidth: 12,
+      });
+    }
   }
 
 
@@ -407,7 +508,51 @@
   function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
   }
+  
+  function loadThemePreference() {
+    try {
+      const stored = localStorage.getItem(THEME_KEY);
+      if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+    } catch {}
+    return 'light';
+  }
+
+  function currentSystemTheme() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyDocumentTheme(pref) {
+    const theme = pref === 'system' ? currentSystemTheme() : pref;
+    document.documentElement.setAttribute('data-theme', theme);
+    currentTheme = theme;
+    if (monacoInstance) applyTheme(monacoInstance);
+  }
+
+  function saveThemePreference(pref) {
+    try { localStorage.setItem(THEME_KEY, pref); } catch {}
+  }
+
   // bootstrap
+  const pref = loadThemePreference();
+  applyDocumentTheme(pref);
   wireUi();
   setupMonaco();
 })();
+
+  function updateHash(name) {
+    if (!name) return;
+    const newHash = `#${encodeURIComponent(name)}`;
+    if (location.hash !== newHash) {
+      history.replaceState(null, "", newHash);
+    }
+  }
+
+  function getHashFixture() {
+    const h = location.hash.replace(/^#/, "");
+    if (!h) return null;
+    try {
+      return decodeURIComponent(h);
+    } catch {
+      return h;
+    }
+  }
