@@ -25,12 +25,18 @@ scripts/           # Helper scripts for builds/tests (to be added)
 PDL uses its own syntax to fuse data with a Markdown template. 
 The main elements are `[directives:...]`, which describe the logic that creates text from data.
 
-Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md).
+* `[value:...]`   Retrieve a value from the data and format it
+* `[loop:...]`    Iterate over a list of data and use advanced matching
+* `[if:...]`      Generate text depending on actual data and variables
+* `[set/get:...]` Write and read variables, mutate and scope them
+* `[condense]`    Compact complex logic to simple natural language
+
+Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md) if you have gobe through the tutorial already).
 The normative, machine-readable contract for PDL lives in `README.yaml`.
 
 # Testing
 
-The library can be tested in the terminal.
+The library can be tested in the playground and your terminal.
 
 ## Fixtures
 
@@ -72,3 +78,7 @@ Inputs expected on the parent node `Config` JSON:
 Build and paste:
 1) `make build n8n` to regenerate `dist/n8n.js`
 2) Copy the contents of `dist/n8n.js` into an n8n Code node (JavaScript)
+
+## Langflow
+
+// tbd
