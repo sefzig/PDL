@@ -22,7 +22,7 @@ Any automation can inject global variables:
 Any word in curly braces is a candidate for a global variable. 
 If it exists in `.variable.json`, it will be replaced before PDL is processed.
 
-This template will make extensive use of this, so watch out for the curly braces!_
+_This template will make extensive use of this, so watch out for the curly braces!_
 
 
 // =================================================
@@ -50,7 +50,7 @@ We can also provide a path:
 *Select the first item that matches a condition.*
 
 Filtered by number:
-* The cheapest priced product is `[value:products[price>0].name]`. // "Widget"
+* The first paid product is `[value:products[price>0].name]`. // "Widget"
 * The product that costs 30€ is `[value:products[price=30].name]`. // "Screen"
 
 Filtered by name:
@@ -124,7 +124,7 @@ PDL supports most common operators:
 * Name starting with "Wid" (`^=`): `[value:products[name^="Wid"].name]` // "Widget"
 * Name ending with "get" (`$=`): `[value:products[name$="get"].name]` // "Widget"
 
-Eventually the path is complicated:
+Sometimes the path becomes more complex:
 * We will spend `[value:release.campaign.metrics["Ad Spend €"]]`€ on ads... // "120000"
 * ...because the product is `[value:release.campaign.taglineWrap.tagline]`. // "Future-ready"
 
@@ -272,7 +272,7 @@ Conditional branches can be stacked with if-elif:
 
 _Numeric comparisons integrate directly into language._
 
-Let us check whether a price is an exact number:
+Let us check whether the price equals a specific value:
 * The {Product} `[if:products[name={Product}].price=30]costs exactly[if-else]does not cost[if-end]` 30€. // "costs exactly"
 
 Let us check whether a price is higher:
@@ -417,7 +417,7 @@ We define a local variable with a list: [set:channels=["Web","Email"]]
 _Formatting applies at retrieval time._
 
 We define a malformed label: [set:label="  digital  "]
-* The label however is formated as `[get:label trim=true title=true]`. // "DIGITAL"
+* The label however is formated as `[get:label trim=true title=true]`. // "Digital"
 
 // -------------------------------------------------
 ### Humble variables ✔
@@ -439,7 +439,8 @@ _A scoped variable exists only within its block._
 
 Here are scoped variables in a loop:
 [loop:products as=p]
-[set:temp=[value:p.name] scope=true]- Reviewing `[value:temp]` in detail.
+  [set:temp=[value:p.name] scope=true]
+- Reviewing `[value:temp]` in detail.
 [loop-end]
 
 Outside the loop, the scoped variable `[get:temp failure="is no longer available"]`. // "is no longer available"
@@ -495,7 +496,7 @@ _Expansion limits ensure predictable rendering._
 
 * The family name repeated five times becomes `[value:family] [value:family] [value:family] [value:family] [value:family]`. // "Digital Digital Digital Digital Digital"
 
-_To not crush this demo, we do not repeat 50 times..._
+_To keep this demo concise, we do not repeat 50 times..._
 
 // -------------------------------------------------
 ### Comments ✔
@@ -506,7 +507,7 @@ _Comments are ignored outside code blocks._
 To remind ourselves of information, we can comment inline
 * Text // This remark is removed
 
-Which does not harm common syntax like urls and math:
+Which does not interfere with URLs or other expressions containing double slashes:
 * http://example.com//path // "http://example.com//path"
 * a//b // "a//b"
 
