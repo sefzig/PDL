@@ -22,18 +22,11 @@ scripts/           # Helper scripts for builds/tests (to be added)
 
 # Directives
 
-This section contains human-readable notes per directive
+PDL uses its own syntax to fuse data with a Markdown template. 
+The main elements are `[directives:...]`, which describe the logic that creates text from data.
+
+Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md).
 The normative, machine-readable contract for PDL lives in `README.yaml`.
-
-## Value
-
-## Get/set
-
-## Conditional
-
-## Loop
-
-## Convenience
 
 # Testing
 
