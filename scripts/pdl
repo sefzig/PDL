@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Natural-ish wrapper: `./scripts/pdl js 01` or `./scripts/pdl js`
+
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <js|py> [fixture_key]" >&2
+  exit 1
+fi
+
+LANG="$1"; shift
+KEY="${1-}"
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+case "$LANG" in
+  js)
+    node "$ROOT/tests/js/run.js" ${KEY:+$KEY}
+    ;;
+  py)
+    echo "Python runner not wired yet; implement packages/py first." >&2
+    exit 1
+    ;;
+  *)
+    echo "Unknown target: $LANG (use js|py)" >&2
+    exit 1
+    ;;
+esac

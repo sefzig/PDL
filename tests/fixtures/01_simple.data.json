@@ -1,0 +1,14 @@
+{
+    "family": "Digital",
+    "products": [
+        { "name": "Demo",   "price": 0,  "locations": ["Hamburg", "München"] },
+        { "name": "Screen", "price": 30, "locations": ["Berlin",  "Hamburg"] },
+        { "name": "Widget", "price": 10, "locations": ["Berlin",  "München"] }
+    ],
+    "locations": [
+        { "name": "Berlin",  "products": ["Screen", "Widget"] },
+        { "name": "Hamburg", "products": ["Demo",   "Screen"] },
+        { "name": "München", "products": ["Demo",   "Widget"] }
+    ],
+    "recommendation": "Demo"
+}

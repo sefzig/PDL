@@ -1,0 +1,35 @@
+{
+    "family": "Digital",
+    "products": [
+        { "name": "Demo",   "price": 0,  "locations": ["Hamburg", "München"] },
+        { "name": "Screen", "price": 30, "locations": ["Berlin",  "Hamburg"] },
+        { "name": "Widget", "price": 10, "locations": ["Berlin",  "München"] },
+        { "name": "widget pro", "price": 12, "locations": ["Berlin"] }
+    ],
+    "locations": [
+        { "name": "Berlin",  "products": ["Screen", "Widget"] },
+        { "name": "Hamburg", "products": ["Demo",   "Screen"] },
+        { "name": "München", "products": ["Demo",   "Widget"] }
+    ],
+    "release": {
+        "launch": {
+            "dateUtc": "2026-02-06T10:00:00Z",
+            "announceLocal": "2026-02-01 09:00"
+        },
+        "events": {
+            "launchEpoch": 1770372000,
+            "pressConferenceSec": 5400
+        },
+        "campaign": {
+            "durationMs": 604800000,
+            "metrics": { "Ad Spend €": 120000, "Landing Pages": 3 },
+            "taglineWrap": [ { "tagline": "Future-ready" } ],
+            "noteMd": "Launch **Jetzt**"
+        },
+        "hero": {
+            "product": null,
+            "fallback": "Screen"
+        }
+    },
+    "recommendation": "Demo"
+}

@@ -1,0 +1,392 @@
+# Machine-readable PDL spec (source of truth for both JS & Py)
+# Sections: globals, directives (by name), helpers. Values are normative; prose belongs in README.md.
+globals:
+  encoding: utf-8
+  max_depth: 40
+  max_expansions: 30000
+  numeric_like:
+    regex: '^[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][-+]?\\d+)?$'
+    parse: Number(trimmed)
+    requires_finite: true
+    examples_numeric_like: ["1", "-1", "+1", "001", "1.0", "1.", ".5", "-0.5", "1e3", "1E+3", "-2.5e-2"]
+    examples_not_numeric_like: ["", " ", "NaN", "Infinity", "-Infinity", "1,000", "0x10", "1_000", "1e", "e3"]
+  unresolved_directive_policy:
+    value: show_literal                 # keep [value:...] when unresolved and no fallback
+    get: show_literal                   # keep [get:...] when unresolved and no fallback
+    set: removed_inline                 # [set:] disappears from output
+    loop: empty_param_or_drop_block     # uses empty="..." else drops block
+    if: drop_branch_only                # non-matching branches removed
+  header_adjustment:
+    baseline: "#"                       # headerIndentation option
+    drop_first_header_default: false
+  aliases:
+    data_alias: true                    # data aliased as `data` in scope
+  variables:
+    template_variables_const: true      # variables passed into render are const bindings
+    humble_default: false
+    const_default: true
+    scope_default: false
+    template_string_substitution: true  # apply {Name} replacements in template using options.variables before parsing
+  date_time:
+    timezone: Europe/Berlin
+    invalid_date: "[invalid date]"
+    invalid_time: "[invalid time]"
+  root_normalization:
+    unwrap_singleton_root_array: true   # render() unwraps top-level [ {..} ] before resolution
+
+directives:
+  value:
+    syntax: "[value:<path> [filters] [options]]"
+    path:
+      resolution_order: [variables_nonhumble, aliases, data_root]
+      supports_alias_first_brackets: true
+      unwrap_singleton_root_array: true
+    filters:
+      predicate_ops: ["=", "!=", "<", "<=", ">", ">=", "^=", "$=", "*="]
+      logical: {and: "&", or: "|"}
+      numeric_coercion:
+        applies_when_both_numeric_like: true
+        numeric_like: globals.numeric_like
+      case_insensitive_flag: ci (default false)
+      selector_default: first_match
+    options:
+      fallback: path_expression_only    # evaluated like primary path; for literal use empty/failure
+      empty: string
+      success: string
+      failure: string
+      replace: regex_s///flags_or_pairs # regex form supports flags i,m,s,g (g=global); pairs old:new; first pair wins
+      trim: boolean (default false)
+      escapeMarkdown: boolean (default false)
+      title: boolean
+      upper: boolean
+      lower: boolean
+      lowerCamel: boolean
+      upperCamel: boolean
+      lowerSnake: boolean
+      upperSnake: boolean
+      truncate: integer (chars, >0)   # keeps first N chars; suffix (if provided) is appended only when truncation happens; final length can exceed N
+      suffix: string
+      stringify: boolean
+      ci: boolean
+      date: string                      # date formatting tokens %Y %y %m %d %H %M %S %L
+      time: string                      # duration formatting tokens %Y %y %m %d %H %M %S %L
+      unit: [ms|s|m|h|d] (default ms for durations)
+    success_condition: resolved_after_fallback
+    failure_handling:
+      null_resolution:
+        - when stringify=false: null counts as unresolved (eligible for fallback/failure)
+        - when stringify=true: null counts as unresolved (eligible for fallback/failure)
+      states:
+        failure:
+          condition: unresolved_after_fallback
+          outcome: use failure= if provided else keep literal directive
+        empty:
+          condition: resolved_value_is_exact_empty_string
+          outcome: use empty= if provided else render empty string
+        success:
+          condition: resolved_value_not_empty_string_after_fallback
+          outcome: use success= if provided else render value
+      examples:
+        - template: "[value:user.middleName empty=\"(none)\" failure=\"(missing)\"]"
+          data: { user: { middleName: "" } }
+          output: "(none)"
+        - template: "[value:user.middleName empty=\"(none)\" failure=\"(missing)\"]"
+          data: { user: {} }
+          output: "(missing)"
+        - template: "[value:user.middleName empty=\"(none)\" failure=\"(missing)\"]"
+          data: { user: { middleName: "Anne" } }
+          output: "Anne"
+        - template: "[value:user.nickname fallback=user.name empty=\"(none)\"]"
+          data: { user: { nickname: "Al", name: "Alice" } }
+          output: "Al"
+        - template: "[value:user.nickname fallback=user.name empty=\"(none)\"]"
+          data: { user: { name: "Alice" } }
+          output: "Alice"
+        - template: "[value:user.nickname fallback=user.name failure=\"(missing)\"]"
+          data: { user: {} }
+          output: "(missing)"
+        - template: "[value:user.nickname fallback=\"(none)\" empty=\"(none)\"]"
+          note: fallback is treated as path expression; use empty/failure for literals
+        - template: "[value:user.middleName empty=\"(none)\" success=\"✔\"]"
+          data_cases:
+            - data: { user: { middleName: "" } }
+              output: "(none)"        # success not applied to empty string
+            - data: { user: { middleName: "Anne" } }
+              output: "✔"
+        - template: "[value:user.name stringify=true]"
+          data: { user: { name: "Alice" } }
+          output: "\"Alice\""
+        - template: "[value:user.missing stringify=true]"
+          data: { user: {} }
+          output: "[value:user.missing stringify=true]"   # unresolved -> kept literal without fallback
+        - template: "[value:user.missing fallback=user.name]"
+          data: { user: { name: "Alice" } }
+          output: "Alice"
+        - template: "[value:user.name date=\"%Y-%m-%d\"]"
+          data: { user: { name: "Alice" } }
+          note: date formatting applies only when value is a date/time; otherwise renders as string
+        - template: "[value:ts date=\"%d.%m.%Y\"]"
+          data: { ts: "2024-02-03T10:00:00Z" }
+          output: "03.02.2024"
+        - template: "[value:ms time=\"%H %M %S\"]"
+          data: { ms: 3605000 }
+          output: "1 hour 0 minutes 5 seconds"
+        - template: "[value:x truncate=3 suffix=\"...\"]"
+          data: { x: "Hello" }
+          output: "Hel..."
+        - template: "[value:x truncate=5 suffix=\"...\"]"
+          data: { x: "Hello" }
+          output: "Hello"
+    output:
+      markdown_escaped_when_escapeMarkdown_true: true
+      stringify_rules:
+        stringify=true:
+          description: JSON.stringify(value); null is unresolved before stringify
+          cases:
+            - string -> JSON string (e.g., Alice -> "\"Alice\"")
+            - number -> "42"
+            - boolean -> "true"/"false"
+            - array|object -> compact JSON
+            - null -> unresolved (eligible for fallback/failure before stringify)
+        stringify=false:
+          description: legacy rendering
+          cases:
+            - null -> unresolved (eligible for fallback/failure)
+            - boolean -> "true"/"false"
+            - array|object -> compact JSON
+            - number|string -> String(value)
+  get:
+    syntax: "[get:<name> [options]]"
+    options:
+      replace: regex_s///flags_or_pairs
+      trim: boolean (default false)
+      escapeMarkdown: boolean (default false)
+      title: boolean
+      upper: boolean
+      lower: boolean
+      lowerCamel: boolean
+      upperCamel: boolean
+      lowerSnake: boolean
+      upperSnake: boolean
+      truncate: integer
+      suffix: string
+      stringify: boolean
+      ci: boolean
+      empty: string
+      time: string                # duration schema tokens %Y %M %D %h %m %s %l
+      unit: [ms|s|m|h|d] (default ms)
+      fallback: path_expression_only
+      success: string
+      failure: string
+      default: unsupported_parse_error   # presence increments errors_parse and ignored
+    behavior:
+      lookup: variables_only
+      success_condition: resolved_before_fallback
+      states:
+        failure:
+          condition: unresolved_after_fallback
+          outcome: use failure= if provided else keep literal directive
+        empty:
+          condition: resolved_value_is_exact_empty_string
+          outcome: use empty= if provided else render empty string
+        success:
+          condition: resolved_value_not_empty_string
+          outcome: use success= if provided else render value
+      formatting: same_as_value_options (replace/trim/case/truncate/stringify/escapeMarkdown/time; stringify semantics identical to value.stringify_rules)
+  set:
+    syntax: "[set:<name>=<value> [flags]]"
+    value: scalar_or_json_or_string
+    flags:
+      const: boolean (default true)
+      humble: boolean (default false)
+      scope: boolean (default false; true limits to current var frame)
+    targeting:
+      scope_true: operate only on current frame (create/update/delete there)
+      scope_false_or_omitted: operate only on global frame 0
+      applies_to: [assignment, deletion_null, flags_only]
+      nearest_binding_search: false
+      flags_only_when_missing: no-op (do not create)
+    overwrite_rules:
+      - if_no_binding: create binding with flags
+      - if_const_true_and_const_false_supplied_same_call: allow value update and flip const
+      - if_const_true_and_no_flip: keep original value
+      - humble_flag_updates_binding
+    output: directive_removed_from_render
+  if:
+    syntax: "[if:<expr>] ... [if-elif:<expr>] ... [if-else] ... [if-end]"
+    expr:
+      ops: ["=", "!=", "<", "<=", ">", ">=", "^=", "$=", "*="]
+      numeric_coercion:
+        applies_when_both_numeric_like: true
+        numeric_like: globals.numeric_like
+      ci_flag: ci=true/false at expr tail
+      nested_value_get: allowed inside expr via resolveNestedInExpr
+      default_truthy: exists check when no op found
+    behavior:
+      block_and_inline_supported: true
+      branch_selection: first true else else-branch
+      whitespace: directive lines stripped; prevents extra blank lines
+      empty_output_branch: drops line if result empty
+  loop:
+    syntax: "[loop:<path>[filters] as=<name> start=<n> join=<sep> empty=<text> dots=<bool> ci=<bool>] ... [loop-end]"
+    path_resolution: same_as_value (resolveForLoop; unwrap singleton root)
+    filters: same predicate logic as value (first/all)
+    options:
+      as: alias name (optional)
+      start: integer base for loop-index (default 1)
+      join: string (joins rendered iterations inline or block; block join supported)
+      empty: string rendered when collection missing/empty else block removed
+      dots: boolean (default true) controls loop-index formatting (dot-joined vs last only)
+      ci: boolean for selector comparisons
+    loop_index: available as "[loop-index]"
+    scope:
+      new_var_frame_per_iteration: true
+      aliases_inherit_and_extend_with_as: true
+    whitespace: trailing blank after loop trimmed when next line blank
+    modes:
+      inline_mode:
+        definition: "[loop:...] ... [loop-end] on a single line"
+        per_iteration: trim result; include only if trimmed non-empty
+        join: between trimmed iteration strings; default concatenation with no separator
+        empty: render empty= if provided else ""
+      block_mode:
+        definition: directives on standalone lines; body is multi-line block
+        preserve: keep body indentation/newlines; coalesce blocks when no join
+        join:
+          no_join: coalesce blocks with edge trimming (at most one blank line between blocks)
+          with_join: join fully rendered block strings with join literal inserted once between blocks; internal formatting preserved; split back on "\n"
+        empty: render empty line if provided else drop block
+    examples:
+      - title: inline list
+        template: "Inline: [loop:items as=x join=\", \"] [value:x] [loop-end]"
+        data: { items: ["A","B"] }
+        output: "Inline: A, B"
+      - title: block join readable
+        template: |
+          [loop:items as=x join="\n---\n"]
+          ### Item
+          - Name: [value:x]
+          [loop-end]
+        data: { items: ["A","B"] }
+        note: output contains two blocks separated by a single literal '---' line; inner formatting preserved
+  condense:
+    syntax: "[condense] ... [condense-end]"
+    behavior:
+      scope: only inside [condense] ... [condense-end]; stray unmatched markers are removed
+      normalize_newlines:
+        - CRLF -> LF
+        - CR -> LF
+        - all LF -> space
+      collapse_spaces: " {2,} -> ' ' then trim"
+      tighten_punctuation:
+        - remove spaces before [.,!?;]     (regex: \\s+([.,!?;]) -> $1)
+        - remove spaces after '('           (regex: \\(\\s+ -> '(')
+        - remove spaces before ')'          (regex: \\s+\\) -> ')')
+        - cleanup '(,' and ',)' combos      (regex: \\(,  -> '(' ,  regex: , \\) -> ')')
+        - normalize '( ' and ' )'           (regex: \\(  -> '(' ,  regex:  \\) -> ')')
+    examples:
+      - title: punctuation tightening
+        input: |
+          [condense]
+          Hello ,  world  ( test ) .
+          [condense-end]
+        output: "Hello, world (test)."
+      - title: newline collapse
+        input: |
+          [condense]
+          A
+          B
+
+          C
+          [condense-end]
+        output: "A B C"
+  selectors:
+    path_syntax: dot_and_bracket
+    bracket_object_keys_with_spaces: supported via quotes
+    object_key_case_insensitive_when_ci: true
+    array_selector:
+      - empty selector -> first element
+      - integer index
+      - predicate with and/or and ops
+      - ci flag honored
+      - first vs all depending on context (value/get first; loop all)
+    alias_first_bracket_paths: true
+  variables:
+    sources: template_variables + set directives
+    precedence_for_value_paths: non-humble var > alias > data; humble falls back to alias/data first
+    humble_semantics: if humble=true and alias/data present, prefer alias/data else var
+    scope: loop scope adds var frame; scope=true confines to that frame
+  formatting:
+    escape_markdown_default: false
+    trim_default: false
+    replace_pairs_and_regex: supported (regex flags i,m,s,g; g=global else first match)
+    case_transforms: title/upper/lower + camel/snake variants
+    truncate:
+      applies_after_string_coercion: true
+      rule: coerce value to string, keep first N chars; if truncated and suffix provided -> str.slice(0,N) + suffix (final length may exceed N)
+    stringify:
+      true: JSON.stringify(value); strings render quoted; objects/arrays compact JSON; booleans "true"/"false"; numbers numeric string; null -> unresolved (eligible for fallback/failure before stringify)
+      false: null counts as unresolved (can trigger fallback/failure); booleans "true"/"false"; array/object -> compact JSON; number/string -> String(value)
+  date_time:
+    tokens: ["%Y","%y","%m","%d","%H","%M","%S","%L"]   # shared by date= and time=
+    date:
+      option: date="<format>"
+      inputs: ISO strings (with/without TZ), date-only strings, epoch seconds (<1e12) or ms (>=1e12), JS Date
+      timezone: interpret naive strings in PDL.DATE_TZ (default Europe/Berlin); respect explicit TZ in input
+      invalid_output: "[invalid date]"
+    time:
+      option: time="<format>"
+      inputs: numeric (string or number) durations; unit: [ms|s|m|h|d] (default ms) -> converted to ms
+      breakdown: 1y=365d, 1m=30d; components Y,m,d,H,M,S,L zero-padded
+      pure_token_format: if format contains only tokens (separated by space), auto-add unit words, pluralize, and trim leading/trailing zero units; example "%H %M %S" -> "1 hour 5 seconds"
+      literal_format: literals kept; tokens replaced numerically (no auto words/trim)
+      invalid_output: "[invalid time]"
+    mutual_exclusive: using both date= and time= on one directive increments errors_parse and yields invalid time output
+    deprecated: format= is not supported; presence increments errors_parse
+  comments:
+    rules:
+      scope: outside fenced code blocks only (``` or ~~~)
+      full_line: lines whose first non-whitespace is "//" are removed
+      inline: a "//" starts a comment only when immediately preceded by horizontal whitespace (space or tab); remove from "//" to EOL
+      url_exceptions: none; e.g., "abc://def // comment" strips trailing comment
+      literal: "//" without preceding whitespace is kept (e.g., "a//b", "http://x.y//z")
+    examples:
+      - "Text // comment" -> "Text"
+      - "a//b" -> "a//b"
+      - "http://x.y//z" -> "http://x.y//z"
+      - "abc://def // comment" -> "abc://def"
+  limits:
+    max_depth: 40
+    max_expansions: 30000
+    max_expansions_counts:
+      - each [value:] expansion
+      - each [get:] expansion
+      - each [loop-index] expansion
+      - each loop iteration (block and inline), even if it emits nothing
+    on_exceed:
+      - increment errors_parse
+      - stop expansion immediately; keep any output produced so far; remaining unprocessed directives stay literal/unexpanded
+      - loops stop at the boundary: iterations rendered before the limit are kept; no further iterations run
+    example:
+      template: "[loop:data]Hello[loop-end]"
+      note: with large data and max_expansions=N, at most N iterations render before halting; errors_parse increments
+
+helpers:
+  replace:
+    regex: "s/pattern/repl/flags" (flags i,m,s,g supported; g=global, others first match; other flags ignored)
+    regex_examples:
+      - input: "foo foo" , replace: "s/foo/bar/g" -> "bar bar"
+      - input: "foo foo" , replace: "s/foo/bar/"  -> "bar foo"
+    pairs: "old:new;old2:new2" first matching pair wins; all occurrences of that old are replaced
+  case:
+    basic: title|upper|lower
+    camel: lowerCamel|upperCamel
+    snake: lowerSnake|upperSnake
+  truncate:
+    applies_to_strings_only: true
+    rule: keep first N chars; when truncation occurs and suffix is provided, output = str.slice(0,N) + suffix (final length may exceed N); no suffix if not truncated
+  to_bool_true: [true, yes, on, "1"]
+  to_bool_false: [false, no, off, "0"]
+  markdown_escape_chars: ["\\","*","_","`","~","[","]","(",")","#","+","-","!",">","|"]
+
+# End of spec

@@ -1,0 +1,52 @@
+[
+  {
+    "tables": true,
+    "questions": [
+      {
+        "Area": "General",
+        "VSME": "Allgemeine Informationen",
+        "Disclosure Requirement": "B1",
+        "Paragraph": "24 a",
+        "Name Short": "Auswahl der Berichtsoptionen",
+        "Question": "Welche der folgenden Optionen haben Sie für die Berichterstattung gewählt?",
+        "Value": "OPTION B: Basismodul + Umfassendes Modul",
+        "Tags": "Verpflichtend",
+        "Responsible person": "Zentrale 81Fünf,Uwe Horstmann",
+        "Status": "in_progress",
+        "Activity level": "Active",
+        "Footnote": "",
+        "Reporting period": "01.01.2024 - 31.12.2024"
+      },
+      {
+        "Area": "General",
+        "VSME": "Allgemeine Informationen",
+        "Disclosure Requirement": "B1",
+        "Paragraph": "24 b",
+        "Name Short": "Unterlassung von Angabepflichten",
+        "Question": "Wenn Sie eine Angabepflicht weggelassen haben, weil sie als Verschlusssache oder vertrauliche Information gilt (siehe Paragraph 19 - VSME), geben Sie bitte an, welche Angabepflicht weggelassen wurde.",
+        "Value": "Keine",
+        "Tags": "Verpflichtend",
+        "Responsible person": "Zentrale 81Fünf,Uwe Horstmann",
+        "Status": "done",
+        "Activity level": "Active",
+        "Footnote": "",
+        "Reporting period": "01.01.2024 - 31.12.2024"
+      },
+      {
+        "Area": "General",
+        "VSME": "Allgemeine Informationen",
+        "Disclosure Requirement": "B1",
+        "Paragraph": "24 c",
+        "Name Short": "Nachhaltigkeitserklärung auf konsolidierter Basis",
+        "Question": "Wurde der Nachhaltigkeitsbericht auf konsolidierter Basis erstellt?",
+        "Value": "",
+        "Tags": "Verpflichtend",
+        "Responsible person": "Zentrale 81Fünf,Uwe Horstmann",
+        "Status": "done",
+        "Activity level": "Active",
+        "Footnote": "",
+        "Reporting period": "01.01.2024 - 31.12.2024"
+      }
+    ]
+  }
+]
