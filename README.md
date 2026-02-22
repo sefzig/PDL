@@ -15,18 +15,18 @@ Repository structure:
 
 ```
 adapters/    # Automation integrations
-  n8n/       # n8n code-node code
-  langflow/  # Langflow component code
+- n8n/       # n8n code-node code
+- langflow/  # Langflow component code
 dist/        # Built artifacts ready to use
 packages/
-  js/src/    # JavaScript PDL library
-  py/pdl/    # Python PDL library
+- js/src/    # JavaScript PDL library
+- py/pdl/    # Python PDL library
 playground/  # A webapp providing an live editor
 scripts/     # Helper scripts for builds/tests
 tests/
-  fixtures/  # Shared cross-language test files
-  js/        # Javascript tests for Codex to use
-  py/        # Python tests for Codex to use
+- fixtures/  # Shared cross-language test files
+- js/        # Javascript tests for Codex to use
+- py/        # Python tests for Codex to use
 ```
 
 # Directives
@@ -40,7 +40,7 @@ The main elements are `[directives:...]`, which describe the logic that creates 
 * `[set/get:...]` Write and read variables, mutate and scope them
 * `[condense]`    Compact complex logic to simple natural language
 
-Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md), if you have gone through the tutorial already). Both are available in the playground.
+Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md), if you have gone through the tutorial already). Both are available in the interactive playground.
 
 The normative, machine-readable contract for PDL lives in `README.yaml`.
 
@@ -95,7 +95,7 @@ Inputs expected on the parent node `Config` JSON:
 
 Build and paste:
 1) `make build n8n` to regenerate `dist/n8n.js`
-2) Copy the contents of `dist/n8n.js` into an n8n Code node (JavaScript)
+2) Copy the contents of `dist/n8n.js` into an n8n JavaScript code node
 
 ## Langflow
 
