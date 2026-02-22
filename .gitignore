@@ -1,3 +1,4 @@
 original/
+dist/*
 tests/fixtures/03_*
 tests/fixtures/04_*

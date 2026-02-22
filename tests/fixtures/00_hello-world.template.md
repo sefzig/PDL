@@ -1,1 +1,1 @@
-Hello [value:hello] ([value:test[status]])! 
+Hello `[value:greetings.{Language} title=true]`, it's `[value:now date="%Y"]`!
