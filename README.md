@@ -9,6 +9,8 @@ Use it to create pretty Markdown documents or to engineer your prompts.
 This repository contains a Javascript and a Python library to integrate PDL into your app. 
 Adjust them, test them, and make scripts build your adapters for n8n and Langflow.
 
+> Use the [Playground](https://github.com/sefzig/PDL/blob/main/playground/index.html) to work on and preview the PDL live.
+
 Repository structure:
 
 ```
@@ -48,12 +50,13 @@ The library can be tested in the playground and your terminal.
 
 ## Fixtures
 
-Tests in `tests/fixtures` are intended to run against both language implementations to keep behavior aligned.
+Tests in `tests/fixtures` are intended to run against both language implementations with aligned behaviour.
+
 Fixtures follow this naming convention (all parts share the same `XX_name` prefix):
 - `XX_name.data.json` – the data payload
 - `XX_name.result.md` – expected rendered output
 - `XX_name.template.md` – the PDL template
-- `XX_name.variables.json` – integration-supplied variables (JSON, can be `{}`)
+- `XX_name.variables.json` – integration-supplied variables
 
 ## Smoke test
 
