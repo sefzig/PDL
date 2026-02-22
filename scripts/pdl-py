@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Convenience wrapper placeholder for the future Python PDL runner.
+
+set -euo pipefail
+
+echo "Python runner not available yet." >&2
+exit 1
