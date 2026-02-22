@@ -1,13 +1,13 @@
 # PDL
 
-Prompt Data Language fuses a template and data to dynamically create Markdown. 
+Prompt Data Language fuses a text template and JSON data to dynamically create Markdown. 
 
 Humans as well as AIs like well written language. 
-With PDL, you create natural language from data. 
+With PDL, you create deterministic natural language from data. 
 Use it to create pretty Markdown documents or to engineer your prompts.
 
 This repository contains a Javascript and a Python library to integrate PDL into your app. 
-Adjust them, test them, and make scripts build your adapters for n8n and Langflow.
+Adapters for n8n and Langflow allow for quick integration into your automations.
 
 > Use the [Playground](https://github.com/sefzig/PDL/blob/main/playground/index.html) to work with PDL and preview the results live.
 
@@ -31,7 +31,7 @@ tests/
 
 # Directives
 
-PDL uses its own syntax to fuse data with a Markdown template. 
+PDL uses its own syntax to fuse data with a text template. 
 The main elements are `[directives:...]`, which describe the logic that creates text from data.
 
 * `[value:...]`   Retrieve a value from the data and format it
