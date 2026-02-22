@@ -13,17 +13,19 @@ Adjust them, test them, and make scripts build your adapters for n8n and Langflo
 ## Structure
 
 ```
+adapters/          # Source adapters
+  n8n/             # n8n code-node code
+  langflow/        # Langflow component code
+dist/              # Built artifacts ready to use
 packages/
-  js/src/          # JavaScript PDL library (source-only for now)
-  py/pdl/          # Python PDL library (source-only for now)
-adapters/          # Source adapters (import the libs)
-  n8n/             # n8n code-node source (built/copied into dist for paste)
-  langflow/        # Langflow adapter placeholder
-dist/              # Built, single-file artifacts ready to paste into hosts
+  js/src/          # JavaScript PDL library
+  py/pdl/          # Python PDL library
+playground/        # A webapp providing an editor to work with PDL
+scripts/           # Helper scripts for builds/tests
 tests/
-  fixtures/        # Shared cross-language test data/templates
-examples/          # Usage demos (to be added)
-scripts/           # Helper scripts for builds/tests (to be added)
+  fixtures/        # Shared cross-language test files
+  js/              # Javascript tests for Codex to use
+  py/              # Python tests for Codex to use
 ```
 
 # Directives
@@ -37,7 +39,8 @@ The main elements are `[directives:...]`, which describe the logic that creates 
 * `[set/get:...]` Write and read variables, mutate and scope them
 * `[condense]`    Compact complex logic to simple natural language
 
-Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md) if you have gobe through the tutorial already).
+Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md), if you have gone through the tutorial already). Both are available in the playground.
+
 The normative, machine-readable contract for PDL lives in `README.yaml`.
 
 # Testing
@@ -48,10 +51,10 @@ The library can be tested in the playground and your terminal.
 
 Tests in `tests/fixtures` are intended to run against both language implementations to keep behavior aligned.
 Fixtures follow this naming convention (all parts share the same `XX_name` prefix):
-- `XX_name.template.md` – the PDL template
 - `XX_name.data.json` – the data payload
-- `XX_name.variables.json` – integration-supplied variables (JSON, can be `{}`)
 - `XX_name.result.md` – expected rendered output
+- `XX_name.template.md` – the PDL template
+- `XX_name.variables.json` – integration-supplied variables (JSON, can be `{}`)
 
 ## Smoke test
 
@@ -62,13 +65,14 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 
 - Build the browser bundle + fixtures manifest for the playground: `make build playground`
 - Open `playground/index.html` in a browser (loads `dist/browser.js` and `playground/fixtures.json`)
-- Use the new Data/Variables modal (header buttons “Show data” / “Show variables”) to inspect or edit fixture JSON with Monaco (JSON mode, folding, theme-aware). Save updates in-memory and re-renders the result; Download/Copy export the edited buffer. Modal blocks the rest of the UI and remembers unsaved edits per tab.
+- Choose from the provided fixtures or create your Custom template.
 
 ## Golden output
 
-- Deterministic tests (JS only): `make test js` or `make test js 01`
-- Full suite (JS + PY placeholder): `make test`
-- Refresh expected outputs: add `update`, e.g., `make test js update 01` (must be cleared by human)
+- Full suite (JS + PY): `make test`
+- Deterministic tests (JS only): `make test js`
+- Deterministic tests (JS and fixture 01 only): `make test js 01`
+- Refresh expected outputs: add `update`, e.g., `make test js 01 update`
 
 # Integrations
 
@@ -93,4 +97,4 @@ Build and paste:
 
 ## Langflow
 
-// tbd
+The Langflow component is not yet available.
