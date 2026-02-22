@@ -9,7 +9,7 @@ Use it to create pretty Markdown documents or to engineer your prompts.
 This repository contains a Javascript and a Python library to integrate PDL into your app. 
 Adjust them, test them, and make scripts build your adapters for n8n and Langflow.
 
-> Use the [Playground](https://github.com/sefzig/PDL/blob/main/playground/index.html) to work on and preview the PDL live.
+> Use the [Playground](https://github.com/sefzig/PDL/blob/main/playground/index.html) to work with PDL and preview the results live.
 
 Repository structure:
 
