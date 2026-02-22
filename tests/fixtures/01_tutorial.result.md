@@ -27,7 +27,7 @@ _We begin by retrieving the facts needed for the briefing._
 
 ### Value retrieval
 
-*Read a field directly from the data.*
+_Read a field directly from the data._
 
 Let's get a value from the data by providing its key:
 * The product belongs to the `Digital` family.
@@ -37,7 +37,7 @@ We can also provide a path:
 
 ### Filtering values
 
-*Select the first item that matches a condition.*
+_Select the first item that matches a condition._
 
 Filtered by number:
 * The first paid product is `Widget`.
@@ -54,11 +54,11 @@ Combine conditions:
 Case-insensitive matching:
 * A WiDgEt is a `Widget`, period.
 * And a Widget stays a `Widget`.
-* And so does wIdGeT: `[value:products[name="wIdGeT" ci].name]`.
+* And so does wIdGeT: `Widget`.
 
 ### Nested values
 
-*Resolve one value inside another when data depends on data.*
+_Resolve one value inside another when data depends on data._
 
 Global variables can live inside directives:
 * We recommend the `Screen` for the price of `30`€.
@@ -68,7 +68,7 @@ And so can PDL values:
 
 ### Unresolved values
 
-*When a path cannot be resolved, behavior is explicit.*
+_When a path cannot be resolved, behavior is explicit._
 
 Missing data keeps the directive visible (so it’s easy to spot):
 * The missing value is `[value:missing.key]`.
@@ -84,7 +84,7 @@ If nothing resolves, we will use a failure value:
 
 ### Existence checks
 
-*Sometimes we only need to know whether the original path resolves.*
+_Sometimes we only need to know whether the original path resolves._
 
 Existing keys will succeed:
 * The family `exists`.
@@ -98,7 +98,7 @@ The fallback path might help:
 
 ### Selector variants
 
-*Selectors support different comparisons and matching styles.*
+_Selectors support different comparisons and matching styles._
 
 PDL supports most common operators:
 * Price filter with `!=`: `Screen`
@@ -112,7 +112,7 @@ Sometimes the path becomes more complex:
 
 ### Replacing values
 
-*Before publishing, we might want to adjust the wording.*
+_Before publishing, we might want to adjust the wording._
 
 We can replace certain values:
 * We will replace "Demo" with `Presentation`.
@@ -156,7 +156,7 @@ But we cannot truncate numbers:
 
 ### Formatting date and time
 
-*Temporal values can be formatted explicitly and consistently.*
+_Temporal values can be formatted explicitly and consistently._
 
 Absolute dates require the "date" option:
 * Release date (UTC): `06.02.2026`
@@ -398,6 +398,7 @@ This is the final headline:
 
 _Expansion limits ensure predictable rendering._
 
+Here is a naive test for the limits set in configuration:
 * The family name repeated five times becomes `Digital Digital Digital Digital Digital`.
 
 _To keep this demo concise, we do not repeat 50 times..._

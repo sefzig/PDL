@@ -16,6 +16,15 @@
   const dataModalDownload = document.getElementById('dataModalDownload');
   const dataModalCopy = document.getElementById('dataModalCopy');
   const dataModalStatus = document.getElementById('dataModalStatus');
+  const themeIconSun = document.getElementById('themeIconSun');
+  const themeIconMoon = document.getElementById('themeIconMoon');
+  const exportModal = document.getElementById('exportModal');
+  const exportModalBody = document.getElementById('exportModalBody');
+  const exportModalStatus = document.getElementById('exportModalStatus');
+  const exportModalSave = document.getElementById('exportModalSave');
+  const exportModalClose = document.getElementById('exportModalClose');
+  const exportSelectAll = document.getElementById('exportSelectAll');
+  const exportSelectAllRow = document.getElementById('exportSelectAllRow');
 
   const COLORS = {
     light: {
@@ -58,6 +67,8 @@
   let modalInitial = { data: '', variables: '' };
   let modalDirty = { data: false, variables: false };
   let modalValid = { data: true, variables: true };
+  let exportSelections = [];
+  let exportTimeout = null;
   let isRendering = false;
   let headingNodes = [];
   const syncLock = { fromEditor: false, fromRender: false };
@@ -378,22 +389,20 @@
           [/^\s*#+.*$/, 'heading'],
           [/^\s*_.*_\s*$/, 'line.italic'],
           [/^\s*[-*]\s+/, 'list.marker'],
-          [/\{[^}]+\}/, 'variable.inner'],
-          [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }],
           [/\{/, { token: 'variable.brace', next: 'varcontent' }],
+          [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }],
           [/^\s*\/\/[ \t]*[-=]+[ \t]*$/, 'comment.shy'],
           [/^\s*\/\/.*$/, 'comment'],
           [/[ \t]\/\/[ \t]*[-=]+[ \t]*$/, 'comment.shy'],
           [/[ \t]\/\/.*$/, 'comment'],
         ],
         directive: [
-          [/\{[^}]+\}/, 'variable.inner'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/\]/, { token: 'directive.bracket', next: '@pop' }],
           [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }], // nested directives
           [/\[/, { token: 'directive.bracket', next: 'selector' }], // selector brackets
           [/\s+/, 'white'],
           [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
-          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/(if|loop|condense)(-)(end)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
           [/(if)(-)(else)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
           [/(if)(-)(elif)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
@@ -409,10 +418,9 @@
           [/./, 'directive.value'],
         ],
         selector: [
-          [/\{[^}]+\}/, 'variable.inner'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/\]/, { token: 'directive.bracket', next: '@pop' }],
           [/\[/, { token: 'directive.bracket', next: 'selector' }],
-          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
           [/([A-Za-z_][\w-]*)(=)(?![!<>=^$*])/, ['selector.optionKey', 'directive.op']],
           [/::?/, 'directive.op'],
@@ -430,7 +438,7 @@
         dq: [
           [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
           [/[\[\]\.:]/, 'directive.op'],
-          [/\{[^}]+\}/, 'variable.inner'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/[^"\\{\\[]+/, 'directive.value'],
           [/\\./, 'directive.value'],
@@ -439,7 +447,7 @@
         sq: [
           [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
           [/[\[\]\.:]/, 'directive.op'],
-          [/\{[^}]+\}/, 'variable.inner'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/[^'\\{\\[]+/, 'directive.value'],
           [/\\./, 'directive.value'],
@@ -517,15 +525,31 @@
     }
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        const template = editor ? editor.getValue() : '';
-        const blob = new Blob([template], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentFixture ? currentFixture.name : 'pdl-template'}.template.md`;
-        a.click();
-        URL.revokeObjectURL(url);
+        openExportModal();
       });
+    }
+    if (exportModalClose) {
+      exportModalClose.addEventListener('click', closeExportModal);
+    }
+    if (exportModal) {
+      const backdrop = exportModal.querySelector('.pg-modal-backdrop');
+      if (backdrop) backdrop.addEventListener('click', closeExportModal);
+    }
+    if (exportModalSave) {
+      exportModalSave.addEventListener('click', () => {
+        handleExportSave();
+      });
+    }
+    if (exportSelectAll) {
+      exportSelectAll.addEventListener('change', () => {
+        const checked = exportSelectAll.checked;
+        exportSelections = exportSelections.map((i) => ({ ...i, selected: checked }));
+        renderExportModal();
+      });
+    }
+    if (dataModal) {
+      const dataBackdrop = dataModal.querySelector('.pg-modal-backdrop');
+      if (dataBackdrop) dataBackdrop.addEventListener('click', closeDataModal);
     }
     if (themeToggle) {
       themeToggle.addEventListener('click', () => {
@@ -533,7 +557,11 @@
         const nextPref = currentPref === 'dark' ? 'light' : currentPref === 'light' ? 'dark' : 'light';
         saveThemePreference(nextPref);
         applyDocumentTheme(nextPref);
+        updateThemeIcon(nextPref === 'system' ? currentSystemTheme() : nextPref);
       });
+      // initialize icon on load
+      const pref = loadThemePreference();
+      updateThemeIcon(pref === 'system' ? currentSystemTheme() : pref);
     }
     if (showDataBtn) showDataBtn.addEventListener('click', () => openDataModal('data'));
     if (showVarsBtn) showVarsBtn.addEventListener('click', () => openDataModal('variables'));
@@ -737,6 +765,165 @@
     document.body.style.overflow = 'hidden';
     setModalStatus('');
     updateModalButtons();
+  }
+
+  function openExportModal() {
+    if (!currentFixture) return;
+    exportSelections = buildExportList();
+    renderExportModal();
+    exportModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    updateExportSaveState();
+  }
+
+  function closeExportModal() {
+    exportModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    clearTimeout(exportTimeout);
+  }
+
+  function buildExportList() {
+    const items = [];
+    const name = currentFixture.name || 'fixture';
+    const prefix = name;
+    const template = editor ? editor.getValue() : '';
+    const files = [
+      { key: 'template', filename: `${prefix}.template.md`, content: template, type: 'text/markdown' },
+      { key: 'data', filename: `${prefix}.data.json`, content: JSON.stringify(currentFixture.data || {}, null, 2), type: 'application/json' },
+      { key: 'variables', filename: `${prefix}.variables.json`, content: JSON.stringify(currentFixture.variables || {}, null, 2), type: 'application/json' },
+      { key: 'expected', filename: `${prefix}.result.md`, content: currentFixture.expected || '', type: 'text/markdown' },
+    ];
+
+    const changedKeys = changedSinceBaseline(prefix, files);
+
+    files.forEach((file) => {
+      items.push({ ...file, selected: changedKeys.has(file.key) });
+    });
+    return items;
+  }
+
+  function changedSinceBaseline(prefix, files) {
+    const key = `pdl:baseline:${prefix}`;
+    let baseline = null;
+    try { baseline = JSON.parse(localStorage.getItem(key) || 'null'); } catch { baseline = null; }
+    const changed = new Set();
+    files.forEach((file) => {
+      const prev = baseline && baseline[file.key];
+      if (!prev) { changed.add(file.key); return; }
+      if (prev !== file.content) changed.add(file.key);
+    });
+    return changed;
+  }
+
+  function updateBaseline(prefix, files) {
+    const data = {};
+    files.forEach((f) => { data[f.key] = f.content; });
+    try { localStorage.setItem(`pdl:baseline:${prefix}`, JSON.stringify(data)); } catch {}
+  }
+
+  function renderExportModal() {
+    exportModalBody.innerHTML = '';
+    updateSelectAllState();
+
+    const list = document.createElement('div');
+    list.className = 'export-list';
+    exportSelections.forEach((item, idx) => {
+      const row = document.createElement('label');
+      row.className = 'export-item';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = item.selected;
+      cb.addEventListener('change', () => {
+        exportSelections[idx].selected = cb.checked;
+        renderExportModal();
+      });
+
+      const label = document.createElement('div');
+      label.className = 'export-item-label';
+      const title = document.createElement('div');
+      title.className = 'export-filename';
+      title.textContent = item.filename;
+      const meta = document.createElement('div');
+      meta.className = 'export-meta';
+      meta.textContent = exportMetaText(item.key);
+      label.appendChild(title);
+      label.appendChild(meta);
+
+      row.appendChild(cb);
+      row.appendChild(label);
+      list.appendChild(row);
+    });
+    exportModalBody.appendChild(list);
+    updateExportSaveState();
+  }
+
+  function updateExportSaveState() {
+    const anySelected = exportSelections.some((i) => i.selected);
+    exportModalSave.disabled = !anySelected;
+    exportModalStatus.textContent = anySelected ? '' : 'Select at least one file';
+  }
+
+  function exportMetaText(key) {
+    switch (key) {
+      case 'template': return 'The unrendered PDL template';
+      case 'expected': return 'The rendered PDL template';
+      case 'data': return 'The JSON data to render';
+      case 'variables': return 'The global variables to provide';
+      default: return key;
+    }
+  }
+
+  function updateSelectAllState() {
+    if (!exportSelectAll || !exportSelectAllRow) return;
+    const all = exportSelections.every((i) => i.selected);
+    const some = exportSelections.some((i) => i.selected);
+    exportSelectAll.checked = all;
+    exportSelectAll.indeterminate = !all && some;
+    const labelSpan = exportSelectAllRow.querySelector('span');
+    if (labelSpan) {
+      labelSpan.textContent = all ? 'Unselect all' : 'Select all';
+    }
+  }
+
+  async function handleExportSave() {
+    const selected = exportSelections.filter((i) => i.selected);
+    if (!selected.length) return;
+    const prefix = currentFixture ? currentFixture.name : 'fixture';
+    clearTimeout(exportTimeout);
+    const allSelected = selected.length === exportSelections.length;
+    if (allSelected) {
+      await downloadZip(prefix, selected);
+      exportModalStatus.textContent = 'Zip download started';
+      exportTimeout = setTimeout(closeExportModal, 3000);
+    } else {
+      selected.forEach(downloadSingle);
+      exportModalStatus.textContent = 'Downloads started';
+    }
+    updateBaseline(prefix, selected);
+    clearTimeout(exportTimeout);
+  }
+
+  function downloadSingle(item) {
+    const blob = new Blob([item.content], { type: item.type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = item.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function downloadZip(prefix, items) {
+    const zip = new JSZip();
+    items.forEach((item) => zip.file(item.filename, item.content));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prefix}.pdl.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function closeDataModal() {
@@ -964,6 +1151,7 @@
     document.documentElement.setAttribute('data-theme', theme);
     currentTheme = theme;
     if (monacoInstance) applyTheme(monacoInstance);
+    updateThemeIcon(theme);
   }
 
   function saveThemePreference(pref) {
@@ -975,6 +1163,14 @@
     const newHash = `#${encodeURIComponent(hashForFixture(name))}`;
     // Force hash update immediately on selection (even if only casing/format differs).
     location.hash = newHash;
+  }
+
+  function updateThemeIcon(theme) {
+    if (!themeIconSun || !themeIconMoon) return;
+    const isDark = theme === 'dark';
+    // In dark mode show sun; in light mode show moon.
+    themeIconSun.classList.toggle('is-active', isDark);
+    themeIconMoon.classList.toggle('is-active', !isDark);
   }
 
   function getHashFixture() {

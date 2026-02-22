@@ -1069,6 +1069,20 @@ html[data-theme="dark"] .message-content {
    opacity: 1;
 }
 
+/* Monaco scrollbar overrides: remove left-hand outline/track */
+.monaco-editor .scrollbar { background: transparent !important; }
+.monaco-editor .scrollbar.vertical { border-left: none !important; }
+.monaco-editor .scrollbar.horizontal { border-top: none !important; }
+.monaco-editor .scrollbar .slider { border: none !important; box-shadow: none !important; }
+.monaco-editor .monaco-scrollable-element > .scrollbar { background: transparent !important; border: 0 !important; }
+.monaco-editor .monaco-scrollable-element > .scrollbar.vertical { border-left: 0 !important; }
+.monaco-editor .monaco-scrollable-element > .scrollbar.horizontal { border-top: 0 !important; }
+.monaco-editor .monaco-scrollable-element > .scrollbar .slider { border: 0 !important; box-shadow: none !important; }
+.monaco-editor .monaco-scrollable-element > .shadow { box-shadow: none !important; }
+.monaco-editor .decorationsOverviewRuler { border-left: 0 !important; background: transparent !important; width: 0 !important; }
+.monaco-editor .overviewRuler { border-left: 0 !important; background: transparent !important; }
+.monaco-editor .margin { border-right: 0 !important; }
+
 /* Input area / footer */
 .input-container-outer {
    position: fixed;

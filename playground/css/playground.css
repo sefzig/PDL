@@ -6,6 +6,13 @@
 .pg-select, .pg-button { height: 30px; border-radius: 6px; border: 1px solid var(--color-input-border); background: var(--color-input-bg); color: var(--color-text-main); padding: 4px 10px; }
 .pg-button { cursor: pointer; }
 .pg-button.primary { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); }
+.pg-button:not(.primary):not(.pg-link-button):hover,
+.pg-select:hover {
+  background: var(--color-settings-button-hover-bg);
+}
+.pg-icon-button { display: inline-flex; align-items: center; justify-content: center; padding: 4px; gap: 6px; border: none; background: none; box-shadow: none; min-width: 0; }
+.theme-icon { display: none; width: 16px; height: 16px; color: var(--color-text-main); }
+.theme-icon.is-active { display: inline-flex; }
 .pg-link-button { background: none; border: none; color: var(--color-link); cursor: pointer; padding: 0 8px; margin-left: -8px; font-size: 12px; text-decoration: underline; }
 .pg-link-button:hover { color: var(--color-link-hover); }
 .pg-main { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
@@ -36,9 +43,15 @@ h1, h2 {
    line-height: 125%;
    padding-left: 2px;
 }
+#rendered p > code,
 #rendered li > code {
-   padding: 2px 2px 2px 2px;
+   padding: 1px 3px 1px 3px;
    margin: 0px -2px 0px -2px;
+   font-family: inherit;
+}
+
+header .pg-title {
+   margin-left: 4px;
 }
 
 /* Modal */
@@ -48,8 +61,32 @@ h1, h2 {
 .pg-modal-dialog { position: relative; width: 80vw; height: 80vh; max-width: 1400px; max-height: 900px; background: var(--color-bg-header); border: 1px solid var(--color-border-subtle); box-shadow: var(--color-shadow-card-strong, 0 8px 24px rgba(0,0,0,0.35)); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
 @media (max-width: 1100px) { .pg-modal-dialog { width: 90vw; height: 90vh; } }
 .pg-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; gap: 8px; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-bg-header); }
-.pg-modal-title { font-weight: 600; }
+.pg-modal-title { font-weight: 600; padding-left: 4px; }
+.pg-modal-title-row { display: flex; align-items: center; gap: 8px; }
 .pg-modal-actions { display: flex; gap: 8px; align-items: center; }
-.pg-modal-select { min-width: 120px; }
+.pg-modal-select { min-width: 120px; margin-left: 6px; }
 #dataModalEditor { flex: 1 1 auto; min-height: 0; }
-.pg-modal-footer { padding: 8px 12px; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg-header); display: flex; align-items: center; justify-content: space-between; }
+.pg-modal-footer { padding: 12px 14px; border-top: 1px solid var(--color-border-subtle); background: var(--color-bg-header); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* Export modal sizing */
+.export-modal-dialog { width: 400px; max-width: 90vw; height: auto; max-height: 80vh; }
+.export-modal-dialog .pg-modal-body { flex: 0 1 auto; max-height: 55vh; }
+.export-modal-dialog .pg-modal-footer { position: relative; }
+
+/* Export modal layout */
+.pg-modal-body { padding: 12px; overflow: auto; flex: 1 1 auto; display: flex; flex-direction: column; gap: 12px; }
+.export-select-all { display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 90%; }
+.export-list { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.export-item { display: flex; align-items: center; gap: 10px; padding: 6px 2px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.export-item input[type="checkbox"] { width: 16px; height: 16px; }
+.export-item-label { display: flex; flex-direction: column; gap: 2px; }
+.export-filename { font-weight: 400; color: var(--color-text-main); }
+.export-meta { font-size: 12px; color: #888888; }
+.export-footer-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+.export-modal-dialog .export-close,
+.pg-modal-dialog .modal-close { border: none; background: none; padding: 4px 8px; box-shadow: none; font-size: 150%; line-height: 1; }
+.data-modal-footer { justify-content: space-between; }
+.data-modal-left { display: flex; align-items: center; gap: 8px; }
+
+#status { display: none; }

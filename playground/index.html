@@ -19,10 +19,22 @@
         <label style="font-size:12px;"><input type="checkbox" id="lowPower" /> Low power</label>
         <label style="font-size:12px;"><input type="checkbox" id="foldSync" /> Heading fold sync</label>
       -->
+        <button id="themeToggle" class="pg-button pg-icon-button" aria-label="Toggle theme" title="Toggle theme">
+          <span id="themeIconSun" aria-hidden="true" class="theme-icon theme-icon-sun" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+          </span>
+          <span id="themeIconMoon" aria-hidden="true" class="theme-icon theme-icon-moon" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+        </button>
         <button id="showData" class="pg-button">Data</button>
         <button id="showVars" class="pg-button">Variables</button>
         <button id="exportBtn" class="pg-button">Export</button>
-        <button id="themeToggle" class="pg-button">Theme</button>
       </div>
     </header>
     <main class="pg-main">
@@ -46,21 +58,46 @@
     <div class="pg-modal-backdrop"></div>
     <div class="pg-modal-dialog" role="dialog" aria-modal="true" aria-label="Fixture data editor">
       <div class="pg-modal-header">
-        <div class="pg-modal-title">Fixture JSON</div>
-        <div class="pg-modal-actions">
+        <div class="pg-modal-title-row">
+          <div class="pg-modal-title">JSON Editor</div>
           <select id="dataModalSelect" class="pg-select pg-modal-select">
             <option value="data">Data</option>
             <option value="variables">Variables</option>
           </select>
-          <button id="dataModalDownload" class="pg-button" disabled>Download</button>
-          <button id="dataModalCopy" class="pg-button" disabled>Copy</button>
-          <button id="dataModalSave" class="pg-button primary" disabled>Save</button>
-          <button id="dataModalClose" class="pg-button">Close</button>
         </div>
+        <button id="dataModalClose" class="pg-button modal-close">×</button>
       </div>
       <div id="dataModalEditor" aria-label="Fixture data"></div>
+      <div class="pg-modal-footer data-modal-footer">
+        <div class="data-modal-left">
+          <button id="dataModalDownload" class="pg-button" disabled>Download</button>
+          <button id="dataModalCopy" class="pg-button" disabled>Copy</button>
+          <span id="dataModalStatus" class="pg-status"></span>
+        </div>
+        <button id="dataModalSave" class="pg-button primary" disabled>Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="exportModal" class="pg-modal" aria-hidden="true">
+    <div class="pg-modal-backdrop"></div>
+    <div class="pg-modal-dialog export-modal-dialog" role="dialog" aria-modal="true" aria-label="Export fixture files">
+      <div class="pg-modal-header">
+        <div class="pg-modal-title">Export</div>
+        <div class="pg-modal-actions">
+          <button id="exportModalClose" class="pg-button export-close">×</button>
+        </div>
+      </div>
+      <div class="pg-modal-body" id="exportModalBody"></div>
       <div class="pg-modal-footer">
-        <span id="dataModalStatus" class="pg-status"></span>
+        <label class="export-select-all" id="exportSelectAllRow">
+          <input type="checkbox" id="exportSelectAll" />
+          <span>Select all</span>
+        </label>
+        <div class="export-footer-actions">
+          <span id="exportModalStatus" class="pg-status"></span>
+          <button id="exportModalSave" class="pg-button primary" disabled>Download</button>
+        </div>
       </div>
     </div>
   </div>
@@ -71,6 +108,7 @@
     window.require = { paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } };
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="../dist/browser.js"></script>
   <script src="js/index.js"></script>
 </body>

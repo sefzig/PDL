@@ -64,7 +64,7 @@ Combine conditions:
 Case-insensitive matching:
 * A WiDgEt is a `[value:products[name="WiDgEt"].name ci=true]`, period. // "Widget"
 * And a Widget stays a `[value:products[name="Widget"].name ci=true]`. // "Widget"
-* And so does wIdGeT: `[value:products[name="wIdGeT" ci].name]`. // "Widget"
+* And so does wIdGeT: `[value:products[name="wIdGeT" ci=true].name]`. // "Widget"
 
 // -------------------------------------------------
 ### Nested values
