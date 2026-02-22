@@ -14,19 +14,19 @@ Adapters for n8n and Langflow allow for quick integration into your automations.
 Repository structure:
 
 ```
-adapters/          # Source adapters
-  n8n/             # n8n code-node code
-  langflow/        # Langflow component code
-dist/              # Built artifacts ready to use
+adapters/    # Automation integrations
+  n8n/       # n8n code-node code
+  langflow/  # Langflow component code
+dist/        # Built artifacts ready to use
 packages/
-  js/src/          # JavaScript PDL library
-  py/pdl/          # Python PDL library
-playground/        # A webapp providing an live editor
-scripts/           # Helper scripts for builds/tests
+  js/src/    # JavaScript PDL library
+  py/pdl/    # Python PDL library
+playground/  # A webapp providing an live editor
+scripts/     # Helper scripts for builds/tests
 tests/
-  fixtures/        # Shared cross-language test files
-  js/              # Javascript tests for Codex to use
-  py/              # Python tests for Codex to use
+  fixtures/  # Shared cross-language test files
+  js/        # Javascript tests for Codex to use
+  py/        # Python tests for Codex to use
 ```
 
 # Directives
