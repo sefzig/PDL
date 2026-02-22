@@ -109,8 +109,7 @@ But missing keys will fail:
 * This key `[value:missing.key success="exists" failure="is missing"]`. // "is missing"
 
 The fallback path might help:
-* The family `[value:missing.key fallback=family success="exists" failure="is missing"]`. // "exists"
-* A missing key `[value:missing.key fallback=another.missing.key success="exists" failure="is missing"]`. // "is missing"
+* The fallback `[value:missing.key fallback=family success="exists" failure="is missing"]`. // "exists"
 
 // -------------------------------------------------
 ### Selector variants
@@ -119,10 +118,10 @@ The fallback path might help:
 _Selectors support different comparisons and matching styles._
 
 PDL supports most common operators:
-* Price filter with `!=`: `[value:products[price!=0&name!=Widget].name]` // "Screen"
-* Cheapest item priced `<=10`: `[value:products[price<=10].name]` // "Widget"
-* Name starting with "Wid" (`^=`): `[value:products[name^="Wid"].name]` // "Widget"
-* Name ending with "get" (`$=`): `[value:products[name$="get"].name]` // "Widget"
+* The first paid product is `[value:products[price!=0].name]`. // "Widget"
+* The discount product is `[value:products[price=10].name]`. // "Widget"
+* The product starting with "Wid" is `[value:products[name^="Wid"].name]`. // "Widget"
+* The product ending with "get" is `[value:products[name$="get"].name]`. // "Widget"
 
 Sometimes the path becomes more complex:
 * We will spend `[value:release.campaign.metrics["Ad Spend €"]]`€ on ads... // "120000"

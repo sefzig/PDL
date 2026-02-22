@@ -93,18 +93,17 @@ But missing keys will fail:
 * This key `is missing`.
 
 The fallback path might help:
-* The family `exists`.
-* A missing key `is missing`.
+* The fallback `exists`.
 
 ### Selector variants
 
 _Selectors support different comparisons and matching styles._
 
 PDL supports most common operators:
-* Price filter with `!=`: `Screen`
-* Cheapest item priced `<=10`: `Demo`
-* Name starting with "Wid" (`^=`): `Widget`
-* Name ending with "get" (`$=`): `Widget`
+* The first paid product is `Widget`.
+* The discount product is `Widget`.
+* The product starting with "Wid" is `Widget`.
+* The product ending with "get" is `Widget`.
 
 Sometimes the path becomes more complex:
 * We will spend `120000`€ on ads...

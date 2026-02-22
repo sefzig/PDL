@@ -20,11 +20,9 @@ adapters/          # Source adapters (import the libs)
   n8n/             # n8n code-node source (built/copied into dist for paste)
   langflow/        # Langflow adapter placeholder
 dist/              # Built, single-file artifacts ready to paste into hosts
-original/          # Legacy Langflow component kept for reference
 tests/
   fixtures/        # Shared cross-language test data/templates
 examples/          # Usage demos (to be added)
-docs/              # Design notes and spec (to be added)
 scripts/           # Helper scripts for builds/tests (to be added)
 ```
 
