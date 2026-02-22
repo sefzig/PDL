@@ -7,6 +7,15 @@
   const statusEl = document.getElementById('status');
   const foldSyncEl = document.getElementById('foldSync');
   const lowPowerEl = document.getElementById('lowPower');
+  const showDataBtn = document.getElementById('showData');
+  const showVarsBtn = document.getElementById('showVars');
+  const dataModal = document.getElementById('dataModal');
+  const dataModalSelect = document.getElementById('dataModalSelect');
+  const dataModalClose = document.getElementById('dataModalClose');
+  const dataModalSave = document.getElementById('dataModalSave');
+  const dataModalDownload = document.getElementById('dataModalDownload');
+  const dataModalCopy = document.getElementById('dataModalCopy');
+  const dataModalStatus = document.getElementById('dataModalStatus');
 
   const COLORS = {
     light: {
@@ -36,6 +45,12 @@
   let renderScrollTimer = null;
   let editorScrollTimer = null;
   let directiveDecorations = [];
+  let modalEditor = null;
+  let modalModels = { data: null, variables: null };
+  let modalMode = 'data';
+  let modalInitial = { data: '', variables: '' };
+  let modalDirty = { data: false, variables: false };
+  let modalValid = { data: true, variables: true };
   let isRendering = false;
   let headingNodes = [];
   const syncLock = { fromEditor: false, fromRender: false };
@@ -205,7 +220,7 @@
         language: 'pdl',
         automaticLayout: true,
         minimap: { enabled: false },
-        fontSize: 14,
+        fontSize: 12.6,
         wordWrap: 'off',
         folding: true,
         glyphMargin: true,
@@ -213,6 +228,8 @@
         lineDecorationsWidth: 12,
         padding: { top: 8, bottom: 24 },
         scrollbar: { verticalScrollbarSize: 10 },
+        scrollBeyondLastLine: false,
+        scrollBeyondLastColumn: 0,
       });
       applyTheme(monacoInstance);
       editor.getModel().onDidChangeContent(() => {
@@ -239,6 +256,10 @@
     monaco.languages.setMonarchTokensProvider('pdl', {
       tokenizer: {
         root: [
+          [/^\s*#+.*$/, 'heading'],
+          [/^\s*_.*_\s*$/, 'line.italic'],
+          [/^\s*[-*]\s+/, 'list.marker'],
+          [/\{[^}]+\}/, 'variable.inner'],
           [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }],
           [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/^\s*\/\/[ \t]*[-=]+[ \t]*$/, 'comment.shy'],
@@ -247,10 +268,12 @@
           [/[ \t]\/\/.*$/, 'comment'],
         ],
         directive: [
+          [/\{[^}]+\}/, 'variable.inner'],
           [/\]/, { token: 'directive.bracket', next: '@pop' }],
           [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }], // nested directives
           [/\[/, { token: 'directive.bracket', next: 'selector' }], // selector brackets
           [/\s+/, 'white'],
+          [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
           [/\{/, { token: 'variable.brace', next: 'varcontent' }],
           [/(if|loop|condense)(-)(end)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
           [/(if)(-)(else)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
@@ -259,7 +282,7 @@
           [/::?/, 'directive.op'],
           [/\:/, 'directive.op'],
           [/\./, 'directive.op'],
-          [/([A-Za-z_][\w-]*)(=)/, ['directive.optionKey', 'directive.op']],
+          [/([A-Za-z_][\w-]*)(=)(?![!<>=^$*])/, ['directive.optionKey', 'directive.op']],
           [/"/, { token: 'directive.op', next: 'dq' }],
           [/'/, { token: 'directive.op', next: 'sq' }],
           [/[A-Za-z_][\w-]*/, 'directive.path'],
@@ -267,29 +290,39 @@
           [/./, 'directive.value'],
         ],
         selector: [
+          [/\{[^}]+\}/, 'variable.inner'],
           [/\]/, { token: 'directive.bracket', next: '@pop' }],
           [/\[/, { token: 'directive.bracket', next: 'selector' }],
           [/\{/, { token: 'variable.brace', next: 'varcontent' }],
-          [/([A-Za-z_][\w-]*)(=)/, ['selector.optionKey', 'directive.op']],
+          [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
+          [/([A-Za-z_][\w-]*)(=)(?![!<>=^$*])/, ['selector.optionKey', 'directive.op']],
           [/::?/, 'directive.op'],
           [/:/, 'directive.op'],
           [/"/, { token: 'directive.op', next: 'dq' }],
           [/'/, { token: 'directive.op', next: 'sq' }],
           [/\./, 'directive.op'],
           [/[A-Za-z_][\w-]*/, 'directive.path'],
-          [/[^{}\[\]]+/, 'directive.value'],
+          [/[^{}\[\]&|<>=!^$*]+/, 'directive.value'],
         ],
         varcontent: [
           [/\}/, { token: 'variable.brace', next: '@pop' }],
           [/[^}]+/, 'variable.inner'],
         ],
         dq: [
-          [/[^"\\]+/, 'directive.value'],
+          [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
+          [/[\[\]\.:]/, 'directive.op'],
+          [/\{[^}]+\}/, 'variable.inner'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
+          [/[^"\\{\\[]+/, 'directive.value'],
           [/\\./, 'directive.value'],
           [/"/, { token: 'directive.op', next: '@pop' }],
         ],
         sq: [
-          [/[^'\\]+/, 'directive.value'],
+          [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],
+          [/[\[\]\.:]/, 'directive.op'],
+          [/\{[^}]+\}/, 'variable.inner'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
+          [/[^'\\{\\[]+/, 'directive.value'],
           [/\\./, 'directive.value'],
           [/'/, { token: 'directive.op', next: '@pop' }],
         ],
@@ -378,6 +411,13 @@
       saveThemePreference(nextPref);
       applyDocumentTheme(nextPref);
     });
+    showDataBtn.addEventListener('click', () => openDataModal('data'));
+    showVarsBtn.addEventListener('click', () => openDataModal('variables'));
+    dataModalSelect.addEventListener('change', (e) => setModalModel(e.target.value === 'variables' ? 'variables' : 'data'));
+    dataModalClose.addEventListener('click', closeDataModal);
+    dataModalSave.addEventListener('click', saveModal);
+    dataModalDownload.addEventListener('click', downloadModal);
+    dataModalCopy.addEventListener('click', copyModal);
     foldSyncEl.addEventListener('change', render);
     if (lowPowerEl) lowPowerEl.checked = lowPower;
     lowPowerEl.addEventListener('change', () => {
@@ -433,11 +473,14 @@
         { token: 'variable.brace', foreground: brightLight, fontStyle: '' },
         { token: 'comment', foreground: '888888' },
         { token: 'comment.shy', foreground: '#cccccc' },
+        { token: 'heading', fontStyle: 'bold' },
+        { token: 'list.marker', foreground: '888888' },
+        { token: 'line.italic', fontStyle: 'italic' },
       ],
       colors: {
         'editor.background': '#f4f5f7',
         'editor.foreground': '#172b4d',
-        'editorLineNumber.foreground': '#5e6c84',
+        'editorLineNumber.foreground': '#cccccc',
         'editorLineNumber.activeForeground': '#172b4d',
         'editor.lineHighlightBackground': '#e9ebf0',
         'editor.selectionBackground': '#cce5e6',
@@ -464,11 +507,14 @@
         { token: 'variable.brace', foreground: brightDark, fontStyle: '' },
         { token: 'comment', foreground: '888888' },
         { token: 'comment.shy', foreground: '#555555' },
+        { token: 'heading', fontStyle: 'bold' },
+        { token: 'list.marker', foreground: '888888' },
+        { token: 'line.italic', fontStyle: 'italic' },
       ],
       colors: {
         'editor.background': '#1b1d21',
         'editor.foreground': '#f4f5f7',
-        'editorLineNumber.foreground': '#c1c7d0',
+        'editorLineNumber.foreground': '#555555',
         'editorLineNumber.activeForeground': '#f4f5f7',
         'editor.lineHighlightBackground': '#2c2f36',
         'editor.selectionBackground': '#2a4f56',
@@ -485,6 +531,7 @@
     const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'pdl-dark' : 'pdl-light';
     monaco.editor.setTheme(theme);
     applyLowPower();
+    if (modalEditor) monaco.editor.setTheme(theme);
   }
 
   function applyLowPower() {
@@ -512,6 +559,146 @@
         lineDecorationsWidth: 12,
       });
     }
+  }
+
+  function ensureModalEditors() {
+    if (!monacoInstance || modalEditor) {
+      return;
+    }
+    const emptyData = monacoInstance.editor.createModel('{}', 'json');
+    const emptyVars = monacoInstance.editor.createModel('{}', 'json');
+    modalModels = { data: emptyData, variables: emptyVars };
+    modalEditor = monacoInstance.editor.create(document.getElementById('dataModalEditor'), {
+      model: emptyData,
+      language: 'json',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      fontSize: 11.7,
+      wordWrap: 'off',
+      folding: true,
+      lineNumbersMinChars: 3,
+      lineDecorationsWidth: 10,
+      padding: { top: 8, bottom: 12 },
+      scrollbar: { verticalScrollbarSize: 10 },
+      scrollBeyondLastLine: false,
+      scrollBeyondLastColumn: 0,
+    });
+
+    Object.values(modalModels).forEach((model) => {
+      model.onDidChangeContent(() => {
+        handleModalChange();
+      });
+    });
+  }
+
+  function openDataModal(mode) {
+    if (!monacoInstance || !currentFixture) return;
+    ensureModalEditors();
+    modalMode = mode === 'variables' ? 'variables' : 'data';
+    modalInitial = {
+      data: JSON.stringify(currentFixture.data || {}, null, 2),
+      variables: JSON.stringify(currentFixture.variables || {}, null, 2),
+    };
+    modalDirty = { data: false, variables: false };
+    modalValid = { data: true, variables: true };
+
+    modalModels.data.setValue(modalInitial.data);
+    modalModels.variables.setValue(modalInitial.variables);
+    setModalModel(modalMode);
+
+    dataModalSelect.value = modalMode;
+    dataModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setModalStatus('');
+    updateModalButtons();
+  }
+
+  function closeDataModal() {
+    dataModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  function setModalModel(mode) {
+    modalMode = mode;
+    modalEditor.setModel(modalModels[mode]);
+    setModalStatus('');
+    updateModalButtons();
+  }
+
+  function currentModalValue() {
+    const model = modalModels[modalMode];
+    return model ? model.getValue() : '';
+  }
+
+  function handleModalChange() {
+    const val = currentModalValue();
+    const initial = modalInitial[modalMode];
+    modalDirty[modalMode] = val !== initial;
+
+    try {
+      JSON.parse(val);
+      modalValid[modalMode] = true;
+      setModalStatus(modalDirty[modalMode] ? 'Unsaved changes' : '');
+    } catch (err) {
+      modalValid[modalMode] = false;
+      setModalStatus('Invalid JSON');
+    }
+    updateModalButtons();
+  }
+
+  function updateModalButtons() {
+    const changed = modalDirty[modalMode];
+    const valid = modalValid[modalMode];
+    const enabled = changed && valid;
+    dataModalSave.disabled = !enabled;
+    dataModalDownload.disabled = !enabled;
+    dataModalCopy.disabled = !enabled;
+  }
+
+  function saveModal() {
+    if (!modalDirty[modalMode] || !modalValid[modalMode]) return;
+    try {
+      const parsed = JSON.parse(currentModalValue());
+      if (modalMode === 'data') {
+        currentFixture.data = parsed;
+      } else {
+        currentFixture.variables = parsed;
+      }
+      modalInitial[modalMode] = JSON.stringify(parsed, null, 2);
+      modalDirty[modalMode] = false;
+      setModalStatus('Saved');
+      scheduleRender();
+      updateModalButtons();
+    } catch (err) {
+      setModalStatus('Invalid JSON');
+    }
+  }
+
+  function downloadModal() {
+    if (dataModalDownload.disabled) return;
+    const text = currentModalValue();
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const suffix = modalMode === 'data' ? 'data' : 'variables';
+    a.download = `${currentFixture ? currentFixture.name : 'fixture'}.${suffix}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function copyModal() {
+    if (dataModalCopy.disabled) return;
+    try {
+      await navigator.clipboard.writeText(currentModalValue());
+      setModalStatus('Copied to clipboard');
+    } catch (err) {
+      setModalStatus('Copy failed');
+    }
+  }
+
+  function setModalStatus(text) {
+    if (dataModalStatus) dataModalStatus.textContent = text || '';
   }
 
   function scheduleDirectiveDecorations() {

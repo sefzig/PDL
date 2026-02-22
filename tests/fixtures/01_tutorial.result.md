@@ -1,6 +1,6 @@
 # PDL: Tutorial
 
-_Prompt Data Language combines data and a template to produce Markdown._
+_Prompt Data Language fuses a template with data to produce natural language._
 
 In this template, we will prepare a small product launch briefing together using structured data.
 The JSON data provided contains all products, locations, and release information.

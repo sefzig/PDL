@@ -17,6 +17,8 @@
       <div class="pg-toolbar" style="margin-left:auto; gap:6px;">
         <label style="font-size:12px;"><input type="checkbox" id="lowPower" /> Low power</label>
         <label style="font-size:12px;"><input type="checkbox" id="foldSync" /> Heading fold sync</label>
+        <button id="showData" class="pg-button">Show data</button>
+        <button id="showVars" class="pg-button">Show variables</button>
         <button id="exportBtn" class="pg-button">Export</button>
         <button id="themeToggle" class="pg-button">Theme</button>
       </div>
@@ -36,6 +38,29 @@
         <div id="rendered"></div>
       </section>
     </main>
+  </div>
+
+  <div id="dataModal" class="pg-modal" aria-hidden="true">
+    <div class="pg-modal-backdrop"></div>
+    <div class="pg-modal-dialog" role="dialog" aria-modal="true" aria-label="Fixture data editor">
+      <div class="pg-modal-header">
+        <div class="pg-modal-title">Fixture JSON</div>
+        <div class="pg-modal-actions">
+          <select id="dataModalSelect" class="pg-select pg-modal-select">
+            <option value="data">Data</option>
+            <option value="variables">Variables</option>
+          </select>
+          <button id="dataModalDownload" class="pg-button" disabled>Download</button>
+          <button id="dataModalCopy" class="pg-button" disabled>Copy</button>
+          <button id="dataModalSave" class="pg-button primary" disabled>Save</button>
+          <button id="dataModalClose" class="pg-button">Close</button>
+        </div>
+      </div>
+      <div id="dataModalEditor" aria-label="Fixture data"></div>
+      <div class="pg-modal-footer">
+        <span id="dataModalStatus" class="pg-status"></span>
+      </div>
+    </div>
   </div>
 
   <!-- Use jsDelivr without SRI to avoid integrity mismatches in sandboxed/offline contexts -->

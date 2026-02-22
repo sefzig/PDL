@@ -64,6 +64,7 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 
 - Build the browser bundle + fixtures manifest for the playground: `make build playground`
 - Open `playground/index.html` in a browser (loads `dist/browser.js` and `playground/fixtures.json`)
+- Use the new Data/Variables modal (header buttons “Show data” / “Show variables”) to inspect or edit fixture JSON with Monaco (JSON mode, folding, theme-aware). Save updates in-memory and re-renders the result; Download/Copy export the edited buffer. Modal blocks the rest of the UI and remembers unsaved edits per tab.
 
 ## Golden output
 

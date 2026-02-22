@@ -1,6 +1,6 @@
 # PDL: Tutorial
 
-_Prompt Data Language combines data and a template to produce Markdown._
+_Prompt Data Language fuses a template with data to produce natural language._
 
 In this template, we will prepare a small product launch briefing together using structured data.
 The JSON data provided contains all products, locations, and release information.
@@ -35,7 +35,7 @@ _We begin by retrieving the facts needed for the briefing._
 ### Value retrieval
 // -------------------------------------------------
 
-*Read a field directly from the data.*
+_Read a field directly from the data._
 
 Let's get a value from the data by providing its key:
 * The product belongs to the `[value:family]` family. // "Digital"
@@ -47,7 +47,7 @@ We can also provide a path:
 ### Filtering values
 // -------------------------------------------------
 
-*Select the first item that matches a condition.*
+_Select the first item that matches a condition._
 
 Filtered by number:
 * The first paid product is `[value:products[price>0].name]`. // "Widget"
@@ -70,7 +70,7 @@ Case-insensitive matching:
 ### Nested values
 // -------------------------------------------------
 
-*Resolve one value inside another when data depends on data.*
+_Resolve one value inside another when data depends on data._
 
 Global variables can live inside directives:
 * We recommend the `{Product}` for the price of `[value:products[name={Product}].price]`€. // "Screen"; "30"
@@ -82,7 +82,7 @@ And so can PDL values:
 ### Unresolved values
 // -------------------------------------------------
 
-*When a path cannot be resolved, behavior is explicit.*
+_When a path cannot be resolved, behavior is explicit._
 
 Missing data keeps the directive visible (so it’s easy to spot):
 * The missing value is `[value:missing.key]`. // "[value:missing.key]"
@@ -100,7 +100,7 @@ If nothing resolves, we will use a failure value:
 ### Existence checks
 // -------------------------------------------------
 
-*Sometimes we only need to know whether the original path resolves.*
+_Sometimes we only need to know whether the original path resolves._
 
 Existing keys will succeed:
 * The family `[value:family success="exists" failure="is missing"]`. // "exists"
@@ -116,7 +116,7 @@ The fallback path might help:
 ### Selector variants
 // -------------------------------------------------
 
-*Selectors support different comparisons and matching styles.*
+_Selectors support different comparisons and matching styles._
 
 PDL supports most common operators:
 * Price filter with `!=`: `[value:products[price!=0&name!=Widget].name]` // "Screen"
@@ -132,7 +132,7 @@ Sometimes the path becomes more complex:
 ### Replacing values
 // -------------------------------------------------
 
-*Before publishing, we might want to adjust the wording.*
+_Before publishing, we might want to adjust the wording._
 
 We can replace certain values:
 * We will replace "Demo" with `[value:products[name=Demo].name replace="Demo:Presentation"]`. // "Presentation"
@@ -180,7 +180,7 @@ But we cannot truncate numbers:
 ### Formatting date and time
 // -------------------------------------------------
 
-*Temporal values can be formatted explicitly and consistently.*
+_Temporal values can be formatted explicitly and consistently._
 
 Absolute dates require the "date" option:
 * Release date (UTC): `[value:release.launch.dateUtc date="%d.%m.%Y"]` // "06.02.2026"
@@ -494,6 +494,7 @@ This is the final headline:
 
 _Expansion limits ensure predictable rendering._
 
+Here is a naive test for the limits set in configuration:
 * The family name repeated five times becomes `[value:family] [value:family] [value:family] [value:family] [value:family]`. // "Digital Digital Digital Digital Digital"
 
 _To keep this demo concise, we do not repeat 50 times..._
