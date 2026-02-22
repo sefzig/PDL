@@ -9,8 +9,7 @@ Use it to create pretty Markdown documents or to engineer your prompts.
 This repository contains a Javascript and a Python library to integrate PDL into your app. 
 Adjust them, test them, and make scripts build your adapters for n8n and Langflow.
 
-
-## Structure
+Repository structure:
 
 ```
 adapters/          # Source adapters
