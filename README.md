@@ -21,7 +21,7 @@ dist/              # Built artifacts ready to use
 packages/
   js/src/          # JavaScript PDL library
   py/pdl/          # Python PDL library
-playground/        # A webapp providing an editor to work with PDL
+playground/        # A webapp providing an live editor
 scripts/           # Helper scripts for builds/tests
 tests/
   fixtures/        # Shared cross-language test files
