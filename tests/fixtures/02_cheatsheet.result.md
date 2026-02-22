@@ -2,61 +2,80 @@
 
 ## Global Variables
 
-* `{Product}`
+* `Screen`
 
 ## Directive: Value
 
+Simple paths
 * `Digital`
 * `[value:release.hero.fallback]`
-* `[value:products[name={Product}].price]`
 
+Filtered paths (number)
 * `Screen`
 * `Screen`
-* `Widget`
-* `Demo`
-* `Widget`
-* `Widget`
-* `Widget`
-* `Widget`
 * `Demo`
 * `Screen`
 * `Screen`
 
-* `[value:products[name=[value:release.hero.fallback]].price]`
+Filtered paths (combine)
+* `Widget`
+* `Demo`
 
+Filtered paths (string)
+* `30`
+* `Widget`
+* `Widget`
+* `Widget`
+* `Widget`
+
+Fallback paths
 * `Digital`
-* `[value:missing.key fallback="products[name={Product}].name"]`
+* `Screen`
 * `missing`
 
+Nested values
+* `[value:products[name=[value:release.hero.fallback]].price]`
+
+Existence option
 * `yes`
 * `no`
 
+Replace values
 * `Presentation`
 * `Dee`
 * `**digital**`
 
+Trim values
 * `digital`
 * `Digital`
 * `DIGITAL`
 * `digital`
-* `diGiTaLProduct`
-* `DiGiTaLProduct`
-* `di_gi_ta_l_product`
-* `DI_GI_TA_L_PRODUCT`
+
+Tuncate values
 * `Lorem ipsum`
 * `Lorem ipsum"..."`
 * `30`
 
+Format casing
+* `diGiTaLProduct`
+* `DiGiTaLProduct`
+* `di_gi_ta_l_product`
+* `DI_GI_TA_L_PRODUCT`
+
+Format dates
 * `[value:release.launch.dateUtc date="%d.%m.%Y"]`
 * `[value:release.launch.announceLocal date="%d.%m.%Y %H:%M Uhr"]`
 * `[value:release.events.launchEpoch date="%d. %B %Y, %H:%M Uhr"]`
 
+Format time
 * `[value:release.campaign.durationMs time="%d %H %M"]`
 * `[value:release.events.pressConferenceSec time="%H %M" unit=s]`
 
+Escape Markdown
 * `[value:release.campaign.noteMd]`
 * `[value:release.campaign.noteMd escapeMarkdown=true]`
 
+Stringify data
 * `"Digital"`
 * `30`
 * `{"name":"Demo","price":0,"locations":["Hamburg","München"]}`
@@ -64,10 +83,12 @@
 
 ## Directive: Conditional
 
-Undefined
+Block conditional:
+- Premium
 
+Inline conditionals
 * `confirms`
-* `unavailable`
+* `available`
 * `missing`
 * `match`
 * `prefix`
@@ -77,19 +98,24 @@ Undefined
 
 ## Directive: Loop
 
+Simple loop
 - `Demo`
 - `Screen`
 - `Widget`
 
+Filtered loop
 - `Screen`
 - `Widget`
 
+Inline loop
 * `Demo, Screen, Widget`
 
+Indexed loop
 - `1`: `Demo`
 - `2`: `Screen`
 - `3`: `Widget`
 
+Nested loop
 - `Demo`
   - `1.1`: `Hamburg`
   - `1.2`: `München`
@@ -102,44 +128,36 @@ Undefined
 
 ## Directive: Get / Set
 
-* ``
-* `{Product} Launch`
+Regular set 
+* `Screen Launch`
 
-* ``
+Mutable set 
 * `Revised`
 
-* ``
+Set array 
 * `Web and Email`
 
-* ``
+Get trimmed 
 * `Digital`
 
-* ``
-* `Analog`
-* ``
+Set humble 
 * `Digital`
 
-
+Set in scope
 - `Demo`
-
 - `Screen`
-
 - `Widget`
-
 * `missing`
 
-* ``
-* `beta`
-
-* ``
-* `{"family":"Digital","products":[{"name":"Demo","price":0,"locations":["Hamburg","München"]},{"name":"Screen","price":30,"locations":["Berlin","Hamburg"]},{"name":"Widget","price":10,"locations":["Berlin","München"]}],"locations":[{"name":"Berlin","products":["Screen","Widget"]},{"name":"Hamburg","products":["Demo","Screen"]},{"name":"München","products":["Demo","Widget"]}],"recommendation":"Demo"}`
+Unset 
+* `[get:feature]`
 
 ## Directive: Condense
 
-Launch, ready!
+- Launch, ready!
 
 ## Comments
 
-* Text
+* No comment.
 * http://example.com//path
 * a//b

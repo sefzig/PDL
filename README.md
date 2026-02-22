@@ -62,7 +62,7 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 
 ## Playground build
 
-- Build the browser bundle + fixtures manifest for the playground: `make build browser`
+- Build the browser bundle + fixtures manifest for the playground: `make build playground`
 - Open `playground/index.html` in a browser (loads `dist/browser.js` and `playground/fixtures.json`)
 
 ## Golden output

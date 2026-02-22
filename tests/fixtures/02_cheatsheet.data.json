@@ -2,8 +2,8 @@
     "family": "Digital",
     "products": [
         { "name": "Demo",   "price": 0,  "locations": ["Hamburg", "München"] },
-        { "name": "Screen", "price": 30, "locations": ["Berlin",  "Hamburg"] },
-        { "name": "Widget", "price": 10, "locations": ["Berlin",  "München"] }
+        { "name": "Widget", "price": 10, "locations": ["Berlin",  "München"] },
+        { "name": "Screen", "price": 30, "locations": ["Berlin",  "Hamburg"] }
     ],
     "locations": [
         { "name": "Berlin",  "products": ["Screen", "Widget"] },

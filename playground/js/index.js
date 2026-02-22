@@ -8,7 +8,21 @@
   const foldSyncEl = document.getElementById('foldSync');
   const lowPowerEl = document.getElementById('lowPower');
 
+  const COLORS = {
+    light: {
+      bright: '#0a6f75', // petrol
+      mid: '#34c4c4',    // tinted turquoise
+      dark: '#08e0e0',   // slightly lighter neon for control chars
+    },
+    dark: {
+      bright: '#04d9d9', // neon turquoise
+      mid: '#34c4c4',    // tinted turquoise
+      dark: '#0f7f89',   // softened petrol
+    },
+  };
+
   const THEME_KEY = 'aimsHub:theme'; // values: light | dark | system
+  const LOW_KEY = 'aimsHub:lowPower';
   
   const md = window.markdownit({ html: false, linkify: false, typographer: true });
   let fixtures = [];
@@ -21,7 +35,8 @@
   let lowPower = false;
   let renderScrollTimer = null;
   let editorScrollTimer = null;
-let isRendering = false;
+  let directiveDecorations = [];
+  let isRendering = false;
   let headingNodes = [];
   const syncLock = { fromEditor: false, fromRender: false };
   let ignoreRenderScroll = false;
@@ -40,18 +55,26 @@ let isRendering = false;
     populateSelect();
   }
 
-  function populateSelect() {
+  function populateSelect(skipSelect) {
     fixtureSelect.innerHTML = '';
     fixtures.forEach((f) => {
       const opt = document.createElement('option');
       opt.value = f.name;
-      opt.textContent = f.name;
+      opt.textContent = f.name.replace(/^\d+_/, '');
       fixtureSelect.appendChild(opt);
     });
-    if (fixtures.length) {
+    if (fixtures.length && !skipSelect) {
       const target = getHashFixture() || fixtures[0].name;
       selectFixture(target);
     }
+  }
+
+
+  function ensureBlankFixture() {
+    const exists = fixtures.find((f) => f.name === 'blank');
+    if (exists) return;
+    fixtures.unshift({ name: 'blank', template: '', data: {}, variables: {} });
+    populateSelect(true);
   }
 
   function selectFixture(name) {
@@ -192,7 +215,10 @@ let isRendering = false;
         scrollbar: { verticalScrollbarSize: 10 },
       });
       applyTheme(monacoInstance);
-      editor.getModel().onDidChangeContent(scheduleRender);
+      editor.getModel().onDidChangeContent(() => {
+        scheduleRender();
+        scheduleDirectiveDecorations();
+      });
       editor.onDidScrollChange(() => {
         if (syncLock.fromRender || pendingEditorScroll) return;
         pendingEditorScroll = true;
@@ -213,19 +239,59 @@ let isRendering = false;
     monaco.languages.setMonarchTokensProvider('pdl', {
       tokenizer: {
         root: [
-          [/\[value:[^\]]+\]/, 'keyword'],
-          [/\[if-elif:[^\]]+\]/, 'keyword'],
-          [/\[if-else\]/, 'keyword'],
-          [/\[if-end\]/, 'keyword'],
-          [/\[if:[^\]]+\]/, 'keyword'],
-          [/\[loop-end\]/, 'keyword'],
-          [/\[loop:[^\]]+\]/, 'keyword'],
-          [/\[set:[^\]]+\]/, 'keyword'],
-          [/\[get:[^\]]+\]/, 'keyword'],
-          [/\[condense\]/, 'keyword'],
-          [/\[condense-end\]/, 'keyword'],
-          [/\{[^}]+\}/, 'variable'],
-          [/\/\/.*$/, 'comment'],
+          [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
+          [/^\s*\/\/[ \t]*[-=]+[ \t]*$/, 'comment.shy'],
+          [/^\s*\/\/.*$/, 'comment'],
+          [/[ \t]\/\/[ \t]*[-=]+[ \t]*$/, 'comment.shy'],
+          [/[ \t]\/\/.*$/, 'comment'],
+        ],
+        directive: [
+          [/\]/, { token: 'directive.bracket', next: '@pop' }],
+          [/\[(?=\s*(?:value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end))/, { token: 'directive.bracket', next: 'directive' }], // nested directives
+          [/\[/, { token: 'directive.bracket', next: 'selector' }], // selector brackets
+          [/\s+/, 'white'],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
+          [/(if|loop|condense)(-)(end)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
+          [/(if)(-)(else)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
+          [/(if)(-)(elif)(?=:|\s|\])/, ['directive.keyword', 'directive.op', 'directive.path']],
+          [/(value|if-elif|if-else|if-end|if|loop-end|loop|set|get|condense|condense-end)(?=:|\s|\])/, 'directive.keyword'],
+          [/::?/, 'directive.op'],
+          [/\:/, 'directive.op'],
+          [/\./, 'directive.op'],
+          [/([A-Za-z_][\w-]*)(=)/, ['directive.optionKey', 'directive.op']],
+          [/"/, { token: 'directive.op', next: 'dq' }],
+          [/'/, { token: 'directive.op', next: 'sq' }],
+          [/[A-Za-z_][\w-]*/, 'directive.path'],
+          [/\d+/, 'directive.value'],
+          [/./, 'directive.value'],
+        ],
+        selector: [
+          [/\]/, { token: 'directive.bracket', next: '@pop' }],
+          [/\[/, { token: 'directive.bracket', next: 'selector' }],
+          [/\{/, { token: 'variable.brace', next: 'varcontent' }],
+          [/([A-Za-z_][\w-]*)(=)/, ['selector.optionKey', 'directive.op']],
+          [/::?/, 'directive.op'],
+          [/:/, 'directive.op'],
+          [/"/, { token: 'directive.op', next: 'dq' }],
+          [/'/, { token: 'directive.op', next: 'sq' }],
+          [/\./, 'directive.op'],
+          [/[A-Za-z_][\w-]*/, 'directive.path'],
+          [/[^{}\[\]]+/, 'directive.value'],
+        ],
+        varcontent: [
+          [/\}/, { token: 'variable.brace', next: '@pop' }],
+          [/[^}]+/, 'variable.inner'],
+        ],
+        dq: [
+          [/[^"\\]+/, 'directive.value'],
+          [/\\./, 'directive.value'],
+          [/"/, { token: 'directive.op', next: '@pop' }],
+        ],
+        sq: [
+          [/[^'\\]+/, 'directive.value'],
+          [/\\./, 'directive.value'],
+          [/'/, { token: 'directive.op', next: '@pop' }],
         ],
       },
     });
@@ -293,8 +359,8 @@ let isRendering = false;
   function wireUi() {
     fixtureSelect.addEventListener('change', (e) => selectFixture(e.target.value));
     newFixtureBtn.addEventListener('click', () => {
-      const hello = fixtures.find((f) => f.name.includes('hello-world')) || fixtures[0];
-      if (hello) selectFixture(hello.name);
+          ensureBlankFixture();
+    selectFixture('blank');
     });
     exportBtn.addEventListener('click', () => {
       const template = editor ? editor.getValue() : '';
@@ -313,8 +379,10 @@ let isRendering = false;
       applyDocumentTheme(nextPref);
     });
     foldSyncEl.addEventListener('change', render);
+    if (lowPowerEl) lowPowerEl.checked = lowPower;
     lowPowerEl.addEventListener('change', () => {
       lowPower = lowPowerEl.checked;
+      saveLowPower(lowPower);
       applyLowPower();
     });
     window.addEventListener('keydown', (e) => {
@@ -343,13 +411,28 @@ let isRendering = false;
   }
 
   function defineMonacoThemes(monaco) {
+    const brightLight = COLORS.light.bright;
+    const midLight = COLORS.light.mid;
+    const darkLight = COLORS.light.dark;
+    const brightDark = COLORS.dark.bright;
+    const midDark = COLORS.dark.mid;
+    const darkDark = COLORS.dark.dark;
+
     monaco.editor.defineTheme('pdl-light', {
       base: 'vs',
       inherit: true,
       rules: [
-        { token: 'keyword', foreground: '006569', fontStyle: 'bold' },
-        { token: 'variable', foreground: '5e6c84' },
+        { token: 'directive.keyword', foreground: brightLight, fontStyle: 'bold' },
+        { token: 'directive.bracket', foreground: darkLight },
+        { token: 'directive.op', foreground: darkLight },
+        { token: 'directive.value', foreground: midLight },
+        { token: 'directive.path', foreground: midLight },
+        { token: 'directive.optionKey', foreground: brightLight },
+        { token: 'selector.optionKey', foreground: midLight },
+        { token: 'variable.inner', foreground: brightLight, fontStyle: 'underline' },
+        { token: 'variable.brace', foreground: brightLight, fontStyle: '' },
         { token: 'comment', foreground: '888888' },
+        { token: 'comment.shy', foreground: '#cccccc' },
       ],
       colors: {
         'editor.background': '#f4f5f7',
@@ -370,9 +453,17 @@ let isRendering = false;
       base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'keyword', foreground: '6eedda', fontStyle: 'bold' },
-        { token: 'variable', foreground: 'c1c7d0' },
+        { token: 'directive.keyword', foreground: brightDark, fontStyle: 'bold' },
+        { token: 'directive.bracket', foreground: darkDark },
+        { token: 'directive.op', foreground: darkDark },
+        { token: 'directive.value', foreground: midDark },
+        { token: 'directive.path', foreground: midDark },
+        { token: 'directive.optionKey', foreground: brightDark },
+        { token: 'selector.optionKey', foreground: midDark },
+        { token: 'variable.inner', foreground: brightDark, fontStyle: 'underline' },
+        { token: 'variable.brace', foreground: brightDark, fontStyle: '' },
         { token: 'comment', foreground: '888888' },
+        { token: 'comment.shy', foreground: '#555555' },
       ],
       colors: {
         'editor.background': '#1b1d21',
@@ -421,6 +512,25 @@ let isRendering = false;
         lineDecorationsWidth: 12,
       });
     }
+  }
+
+  function scheduleDirectiveDecorations() {
+    clearTimeout(renderScrollTimer);
+    renderScrollTimer = setTimeout(applyDirectiveDecorations, 120);
+  }
+
+  function applyDirectiveDecorations() {
+    if (!editor || !monacoInstance) return;
+    const model = editor.getModel();
+    if (!model) return;
+    const matches = model.findMatches('\\[[^\]\n]+\]', false, true, false, null, true);
+    const decorations = matches.map((m) => ({
+      range: m.range,
+      options: {
+        inlineClassName: 'pdl-directive',
+      },
+    }));
+    directiveDecorations = editor.deltaDecorations(directiveDecorations, decorations);
   }
 
 
@@ -509,12 +619,24 @@ let isRendering = false;
     return Math.min(max, Math.max(min, v));
   }
   
+
+  function loadLowPower() {
+    try {
+      const v = localStorage.getItem(LOW_KEY);
+      if (v === 'false') return false;
+      return true;
+    } catch { return true; }
+  }
+
+  function saveLowPower(v) {
+    try { localStorage.setItem(LOW_KEY, v ? 'true' : 'false'); } catch {}
+  }
   function loadThemePreference() {
     try {
       const stored = localStorage.getItem(THEME_KEY);
       if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
     } catch {}
-    return 'light';
+    return 'system';
   }
 
   function currentSystemTheme() {
@@ -535,8 +657,11 @@ let isRendering = false;
   // bootstrap
   const pref = loadThemePreference();
   applyDocumentTheme(pref);
+  lowPower = loadLowPower();
+  if (lowPowerEl) lowPowerEl.checked = lowPower;
   wireUi();
   setupMonaco();
+  injectDirectiveStyles();
 })();
 
   function updateHash(name) {
@@ -555,4 +680,15 @@ let isRendering = false;
     } catch {
       return h;
     }
+  }
+
+  function injectDirectiveStyles() {
+    if (document.getElementById('pdl-directive-style')) return;
+    const style = document.createElement('style');
+    style.id = 'pdl-directive-style';
+    style.textContent = `
+      [data-theme="light"] .pdl-directive { border-left: 2px solid ${COLORS.light.bright}; background: ${COLORS.light.mid}1f; padding-left: 3px; }
+      [data-theme="dark"] .pdl-directive  { border-left: 2px solid ${COLORS.dark.bright}; background: ${COLORS.dark.mid}26; padding-left: 3px; }
+    `;
+    document.head.appendChild(style);
   }

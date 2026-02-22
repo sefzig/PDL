@@ -11,57 +11,76 @@
 ## Directive: Value
 // =================================================
 
+Simple paths
 * `[value:family]` // "Digital"
 * `[value:release.hero.fallback]` // "Widget"
-* `[value:products[name={Product}].price]` // "30"
 
-* `[value:products[price>0].name]` // "Widget"
+Filtered paths (number)
 * `[value:products[price=30].name]` // "Screen"
-* `[value:products[name=Widget&price=10].name]` // "Widget"
-* `[value:products[name=Missing|name=Demo].name]` // "Demo"
-* `[value:products[name="WiDgEt"].name ci=true]` // "Widget"
-* `[value:products[name^="Wid"].name]` // "Widget"
-* `[value:products[name$="get"].name]` // "Widget"
-* `[value:products[name*="idg"].name]` // "Widget"
+* `[value:products[price>0].name]` // "Widget"
 * `[value:products[price<=10].name]` // "Widget"
 * `[value:products[price>=10].name]` // "Widget"
 * `[value:products[price!=0].name]` // "Widget"
 
-* `[value:products[name=[value:release.hero.fallback]].price]` // "10"
+Filtered paths (combine)
+* `[value:products[name=Widget&price=10].name]` // "Widget"
+* `[value:products[name=Missing|name=Demo].name]` // "Demo"
 
+Filtered paths (string)
+* `[value:products[name={Product}].price]` // "30"
+* `[value:products[name="WiDgEt"].name ci=true]` // "Widget"
+* `[value:products[name^="Wid"].name]` // "Widget"
+* `[value:products[name$="get"].name]` // "Widget"
+* `[value:products[name*="idg"].name]` // "Widget"
+
+Fallback paths
 * `[value:missing.key fallback=family]` // "Digital"
 * `[value:missing.key fallback="products[name={Product}].name"]` // "Screen"
 * `[value:missing.key fallback=another.missing.key failure="missing"]` // "missing"
 
+Nested values
+* `[value:products[name=[value:release.hero.fallback]].price]` // "10"
+
+Existence option
 * `[value:family success="yes" failure="no"]` // "yes"
 * `[value:missing.key success="yes" failure="no"]` // "no"
 
+Replace values
 * `[value:products[name=Demo].name replace="Demo:Presentation"]` // "Presentation"
 * `[value:products[name=Demo].name replace="emo:ee"]` // "Dee"
 * `[value:family replace="s/Digital/**digital**/"]` // "**Digital**"
 
+Trim values
 * `[value:family replace="Digital:  digital  " trim=true]` // "digital"
 * `[value:family replace="Digital:DiGiTaL" title=true]` // "Digital"
 * `[value:family replace="Digital:DiGiTaL" upper=true]` // "DIGITAL"
 * `[value:family replace="Digital:DiGiTaL" lower=true]` // "digital"
-* `[value:family replace="Digital:DiGiTaL product" lowerCamel=true]` // "digitalProduct"
-* `[value:family replace="Digital:DiGiTaL product" upperCamel=true]` // "DigitalProduct"
-* `[value:family replace="Digital:DiGiTaL product" lowerSnake=true]` // "digital_product"
-* `[value:family replace="Digital:DiGiTaL product" upperSnake=true]` // "DIGITAL_PRODUCT"
+
+Tuncate values
 * `[value:family replace="Digital:Lorem ipsum dolor sit amet" truncate=11]` // "Lorem ipsum"
 * `[value:family replace="Digital:Lorem ipsum dolor sit amet" truncate=11 suffix="..."]` // "Lorem ipsum..."
 * `[value:products[name=Screen].price truncate=1 suffix="?"]` // "30"
 
+Format casing
+* `[value:family replace="Digital:DiGiTaL product" lowerCamel=true]` // "digitalProduct"
+* `[value:family replace="Digital:DiGiTaL product" upperCamel=true]` // "DigitalProduct"
+* `[value:family replace="Digital:DiGiTaL product" lowerSnake=true]` // "digital_product"
+* `[value:family replace="Digital:DiGiTaL product" upperSnake=true]` // "DIGITAL_PRODUCT"
+
+Format dates
 * `[value:release.launch.dateUtc date="%d.%m.%Y"]` // "06.02.2026"
 * `[value:release.launch.announceLocal date="%d.%m.%Y %H:%M Uhr"]` // "01.02.2026 09:00 Uhr"
 * `[value:release.events.launchEpoch date="%d. %B %Y, %H:%M Uhr"]` // "06. Februar 2026, 10:00 Uhr"
 
+Format time
 * `[value:release.campaign.durationMs time="%d %H %M"]` // "7 Tage"
 * `[value:release.events.pressConferenceSec time="%H %M" unit=s]` // "1 Stunde 30 Minuten"
 
+Escape Markdown
 * `[value:release.campaign.noteMd]` // "Launch **Today**"
 * `[value:release.campaign.noteMd escapeMarkdown=true]` // "Launch \*\*Today\*\*"
 
+Stringify data
 * `[value:family stringify=true]` // "\"Digital\""
 * `[value:products[name=Screen].price stringify=true]` // "30"
 * `[value:products[0] stringify=true]` // {"name":"Demo","price":0,"locations":["Hamburg","München"]}
@@ -72,16 +91,18 @@
 ## Directive: Conditional
 // =================================================
 
+Block conditional:
 [if:products[name={Product}].price>20]
-Premium
+- Premium
 [if-elif:products[name={Product}].price>10]
-Mid
+- Mid
 [if-elif:products[name={Product}].price>0]
-Affordable
+- Affordable
 [if-else]
-Undefined
+- Undefined
 [if-end]
 
+Inline conditionals
 * `[if:products[name=Screen].price=30]confirms[if-else]denies[if-end]` // "confirms"
 * `[if:products[name={Product}].price>0]available[if-else]unavailable[if-end]` // "available"
 * `[if:release.hero.fallback]exists[if-else]missing[if-end]` // "exists"
@@ -96,20 +117,25 @@ Undefined
 ## Directive: Loop
 // =================================================
 
+Simple loop
 [loop:products as=product]
 - `[value:product.name]`
 [loop-end]
 
+Filtered loop
 [loop:products[price>0] as=product]
 - `[value:product.name]`
 [loop-end]
 
+Inline loop
 * `[loop:products as=product join=", "][value:product.name][loop-end]` // "Demo, Screen, Widget"
 
+Indexed loop
 [loop:products as=product]
 - `[loop-index]`: `[value:product.name]`
 [loop-end]
 
+Nested loop
 [loop:products as=product]
 - `[value:product.name]`
   [loop:product.locations as=location]
@@ -122,35 +148,29 @@ Undefined
 ## Directive: Get / Set
 // =================================================
 
-* `[set:headline="{Product} Launch"]`
+Regular set [set:headline="{Product} Launch"]
 * `[get:headline]` // "Screen Launch"
 
-* `[set:headline="Revised" const=false]`
+Mutable set [set:headline="Revised" const=false]
 * `[get:headline]` // "Revised"
 
-* `[set:channels=["Web","Email"]]`
+Set array [set:channels=["Web","Email"]]
 * `[loop:channels as=channel join=" and "][value:channel][loop-end]` // "Web and Email"
 
-* `[set:label="  digital  "]`
+Get trimmed [set:label="  digital  "]
 * `[get:label trim=true title=true]` // "Digital"
 
-* `[set:family="Analog" const=false]`
+Set humble [set:family="Analog" const=false][set:family="Digital" humble=false]
 * `[value:family]` // "Analog"
-* `[set:family="Digital" humble=false]`
-* `[value:family]` // "Digital"
 
+Set in scope
 [loop:products as=p]
-[set:temp=[value:p.name] scope=true]
-- `[value:temp]`
+[set:temp=[value:p.name] scope=true]- `[value:temp]` // Fix in library: Set uses a line
 [loop-end]
-
 * `[get:temp failure="missing"]` // "missing"
 
-* `[set:feature=alpha][set:feature=beta const=false]`
-* `[get:feature]` // "beta"
-
-* `[set:feature=null]`
-* `[get:feature fallback="{Product}"]` // "Screen"
+Unset [set:feature=null]
+* `[get:feature]` // "Screen"
 
 
 // =================================================
@@ -158,7 +178,7 @@ Undefined
 // =================================================
 
 [condense]
-Launch ,  ready !
+- Launch ,  ready !
 [condense-end]
 
 
@@ -166,6 +186,6 @@ Launch ,  ready !
 ## Comments
 // =================================================
 
-* Text // removed
+* No comment. // This comment is removed
 * http://example.com//path // "http://example.com//path"
 * a//b // "a//b"

@@ -16,7 +16,7 @@ build:
 	@set -- $(filter-out $@,$(MAKECMDGOALS)); \
 	target=$${1:-n8n}; \
 	if [ "$$target" = "n8n" ]; then node scripts/build-n8n.js; \
-	elif [ "$$target" = "browser" ]; then node scripts/build-browser.js && node scripts/build-fixtures.js; \
+	elif [ "$$target" = "playground" ]; then node scripts/build-browser.js && node scripts/build-playground.js; \
 	else echo "Unknown build target: $$target"; exit 1; fi
 
 .PHONY: test

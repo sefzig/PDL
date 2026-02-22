@@ -6,26 +6,7 @@
   <title>PDL Playground</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23006569'/%3E%3Ctext x='50' y='62' font-size='54' text-anchor='middle' fill='white' font-family='sans-serif'%3EP%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="css/index.css" />
-  <style>
-    /* Playground-specific layout on top of provided CSS */
-    .playground-shell { display: grid; grid-template-rows: 48px 1fr; min-height: 100vh; }
-    .pg-header { position: sticky; top: 0; z-index: 90; height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 12px; background: var(--color-bg-header); border-bottom: 1px solid var(--color-border-subtle); }
-    .pg-title { font-weight: 600; }
-    .pg-select, .pg-button { height: 30px; border-radius: 6px; border: 1px solid var(--color-input-border); background: var(--color-input-bg); color: var(--color-text-main); padding: 4px 10px; }
-    .pg-button { cursor: pointer; }
-    .pg-button.primary { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); }
-    .pg-main { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
-    .pg-panel { min-height: 0; display: flex; flex-direction: column; }
-    .pg-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-bg-header); }
-    .pg-panel-body { flex: 1 1 auto; min-height: 0; }
-    #editor { height: calc(100vh - 48px - 40px); }
-    #rendered { height: calc(100vh - 48px - 40px); overflow: auto; padding: 24px 28px; box-sizing: border-box; }
-    #rendered code { background: var(--color-accent, #00a2a7); color: #000; border-radius: 3px; padding: 0.15em 0.35em; }
-    .pg-toolbar { display: flex; gap: 8px; align-items: center; }
-    .pg-status { font-size: 12px; color: var(--color-text-muted); }
-    .fold-toggle { cursor: pointer; }
-    @media (max-width: 1100px) { .pg-main { grid-template-columns: 1fr; } #editor, #rendered { height: calc(50vh - 24px); } }
-  </style>
+  <link rel="stylesheet" href="css/playground.css" />
 </head>
 <body>
   <div class="playground-shell">
@@ -34,10 +15,10 @@
       <select id="fixtureSelect" class="pg-select"></select>
       <button id="newFixture" class="pg-button">New</button>
       <div class="pg-toolbar" style="margin-left:auto; gap:6px;">
-        <button id="exportBtn" class="pg-button">Export</button>
-        <button id="themeToggle" class="pg-button">Toggle Theme</button>
-        <span id="status" class="pg-status"></span>
         <label style="font-size:12px;"><input type="checkbox" id="lowPower" /> Low power</label>
+        <label style="font-size:12px;"><input type="checkbox" id="foldSync" /> Heading fold sync</label>
+        <button id="exportBtn" class="pg-button">Export</button>
+        <button id="themeToggle" class="pg-button">Theme</button>
       </div>
     </header>
     <main class="pg-main">
@@ -48,11 +29,9 @@
         <div id="editor" aria-label="PDL template editor"></div>
       </section>
       <section class="pg-panel">
-        <div class="pg-panel-header">
+        <div class="pg-panel-header" style="display:flex; align-items:center; justify-content:space-between;">
           <div>Result</div>
-          <div class="pg-toolbar">
-            <label><input type="checkbox" id="foldSync" /> Heading fold sync (beta)</label>
-          </div>
+          <span id="status" class="pg-status"></span>
         </div>
         <div id="rendered"></div>
       </section>
