@@ -1,8 +1,8 @@
 (function () {
   const renderedEl = document.getElementById('rendered');
   const fixtureSelect = document.getElementById('fixtureSelect');
-  const newFixtureBtn = document.getElementById('newFixture');
   const exportBtn = document.getElementById('exportBtn');
+  const customResetBtn = document.getElementById('customReset');
   const themeToggle = document.getElementById('themeToggle');
   const statusEl = document.getElementById('status');
   const foldSyncEl = document.getElementById('foldSync');
@@ -32,15 +32,22 @@
 
   const THEME_KEY = 'aimsHub:theme'; // values: light | dark | system
   const LOW_KEY = 'aimsHub:lowPower';
+  const CUSTOM_KEY = 'aimsHub:customFixture';
+  const CUSTOM_NAME = 'Custom';
+  const CUSTOM_LABEL = 'Custom';
   
   const md = window.markdownit({ html: false, linkify: false, typographer: true });
   let fixtures = [];
+  let customFixture = { name: CUSTOM_NAME, template: '', data: {}, variables: {} };
+  let customStored = false;
+  let suppressCustomPersist = false;
   let editor = null;
   let currentFixture = null;
   let monacoInstance = null;
   let renderTimer = null;
   let pendingRenderScroll = false;
   let pendingEditorScroll = false;
+  let customSaveTimer = null;
   let lowPower = false;
   let renderScrollTimer = null;
   let editorScrollTimer = null;
@@ -64,42 +71,100 @@
   let anchorTpl = [];
   
   async function loadFixtures() {
+    loadCustomFromStorage();
     const res = await fetch(`fixtures.json?_=${Date.now()}`);
     const json = await res.json();
     fixtures = json.fixtures || [];
     populateSelect();
   }
 
+  function loadCustomFromStorage() {
+    try {
+      const raw = localStorage.getItem(CUSTOM_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      customFixture = {
+        name: CUSTOM_NAME,
+        template: parsed.template || '',
+        data: parsed.data || {},
+        variables: parsed.variables || {},
+      };
+      customStored = true;
+    } catch {
+      customStored = false;
+      customFixture = { name: CUSTOM_NAME, template: '', data: {}, variables: {} };
+    }
+  }
+
+  function persistCustom() {
+    try {
+      localStorage.setItem(CUSTOM_KEY, JSON.stringify({
+        template: customFixture.template || '',
+        data: customFixture.data || {},
+        variables: customFixture.variables || {},
+      }));
+      customStored = true;
+      updateCustomResetVisibility();
+    } catch {}
+  }
+
+  function schedulePersistCustom() {
+    clearTimeout(customSaveTimer);
+    customSaveTimer = setTimeout(() => {
+      persistCustom();
+      customSaveTimer = null;
+    }, 400);
+  }
+
   function populateSelect(skipSelect) {
     fixtureSelect.innerHTML = '';
+
+    // Custom first
+    const customOpt = document.createElement('option');
+    customOpt.value = CUSTOM_NAME;
+    customOpt.textContent = CUSTOM_LABEL;
+    fixtureSelect.appendChild(customOpt);
+
+    // Then fixtures
     fixtures.forEach((f) => {
       const opt = document.createElement('option');
       opt.value = f.name;
-      opt.textContent = f.name.replace(/^\d+_/, '');
+      opt.textContent = formatFixtureLabel(f.name);
       fixtureSelect.appendChild(opt);
     });
-    if (fixtures.length && !skipSelect) {
-      const target = getHashFixture() || fixtures[0].name;
-      selectFixture(target);
+
+    if (!skipSelect) {
+      const hashTarget = getHashFixture();
+      if (hashTarget) {
+        selectFixture(hashTarget);
+      } else if (customStored) {
+        selectFixture(CUSTOM_NAME);
+      } else {
+        const hello = fixtures.find((f) => f.name === '00_hello-world');
+        if (hello) {
+          selectFixture(hello.name);
+        } else if (fixtures.length) {
+          selectFixture(fixtures[0].name);
+        }
+      }
     }
   }
 
 
-  function ensureBlankFixture() {
-    const exists = fixtures.find((f) => f.name === 'blank');
-    if (exists) return;
-    fixtures.unshift({ name: 'blank', template: '', data: {}, variables: {} });
-    populateSelect(true);
-  }
-
   function selectFixture(name) {
-    const fixture = fixtures.find((f) => f.name === name);
+    let fixture = null;
+    if (name === CUSTOM_NAME) {
+      fixture = customFixture;
+    } else {
+      fixture = fixtures.find((f) => f.name === name);
+    }
     if (!fixture) return;
     currentFixture = fixture;
-    fixtureSelect.value = name;
+    fixtureSelect.value = fixture.name === CUSTOM_NAME ? CUSTOM_NAME : fixture.name;
     setEditorValue(fixture.template || '');
     scheduleRender();
     updateHash(name);
+    updateCustomResetVisibility();
   }
 
   function setEditorValue(text) {
@@ -202,6 +267,52 @@
     return (text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'section';
   }
 
+  function fixtureSlug(name) {
+    return (name || '')
+      .replace(/^\d+_?/, '')   // drop numeric prefix
+      .replace(/_/g, '-')      // underscores to hyphen
+      .toLowerCase();
+  }
+
+  function hashForFixture(name) {
+    return fixtureSlug(name);
+  }
+
+  function findFixtureByHash(hash) {
+    if (!hash) return null;
+    const cleaned = hash.replace(/^#/, '').toLowerCase();
+    if (!cleaned) return null;
+    if (cleaned === fixtureSlug(CUSTOM_NAME)) return CUSTOM_NAME;
+    const match = fixtures.find((f) => fixtureSlug(f.name) === cleaned);
+    return match ? match.name : null;
+  }
+
+  function formatFixtureLabel(name) {
+    const base = (name || '')
+      .replace(/^\d+_?/, '')          // drop numeric prefix + optional underscore
+      .split('.')[0];                  // drop everything after the first dot (extensions)
+    const spaced = base.replace(/[-_]+/g, ' ').trim();
+    return spaced.replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
+  }
+
+  function updateCustomResetVisibility() {
+    if (!customResetBtn) return;
+    const visible = currentFixture && currentFixture.name === CUSTOM_NAME && customStored;
+    customResetBtn.style.display = visible ? 'inline' : 'none';
+  }
+
+  function resetCustom() {
+    customFixture = { name: CUSTOM_NAME, template: '', data: {}, variables: {} };
+    customStored = false;
+    try { localStorage.removeItem(CUSTOM_KEY); } catch {}
+    suppressCustomPersist = true;
+    setEditorValue('');
+    if (modalModels.data) modalModels.data.setValue('{}');
+    if (modalModels.variables) modalModels.variables.setValue('{}');
+    scheduleRender();
+    updateCustomResetVisibility();
+  }
+
   function escapeHtml(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -235,6 +346,14 @@
       editor.getModel().onDidChangeContent(() => {
         scheduleRender();
         scheduleDirectiveDecorations();
+        if (currentFixture && currentFixture.name === CUSTOM_NAME) {
+          if (suppressCustomPersist) {
+            suppressCustomPersist = false;
+          } else {
+            customFixture.template = editor.getValue();
+            schedulePersistCustom();
+          }
+        }
       });
       editor.onDidScrollChange(() => {
         if (syncLock.fromRender || pendingEditorScroll) return;
@@ -390,41 +509,48 @@
   }
 
   function wireUi() {
-    fixtureSelect.addEventListener('change', (e) => selectFixture(e.target.value));
-    newFixtureBtn.addEventListener('click', () => {
-          ensureBlankFixture();
-    selectFixture('blank');
-    });
-    exportBtn.addEventListener('click', () => {
-      const template = editor ? editor.getValue() : '';
-      const blob = new Blob([template], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${currentFixture ? currentFixture.name : 'pdl-template'}.template.md`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-    themeToggle.addEventListener('click', () => {
-      const currentPref = loadThemePreference();
-      const nextPref = currentPref === 'dark' ? 'light' : currentPref === 'light' ? 'dark' : 'light';
-      saveThemePreference(nextPref);
-      applyDocumentTheme(nextPref);
-    });
-    showDataBtn.addEventListener('click', () => openDataModal('data'));
-    showVarsBtn.addEventListener('click', () => openDataModal('variables'));
-    dataModalSelect.addEventListener('change', (e) => setModalModel(e.target.value === 'variables' ? 'variables' : 'data'));
-    dataModalClose.addEventListener('click', closeDataModal);
-    dataModalSave.addEventListener('click', saveModal);
-    dataModalDownload.addEventListener('click', downloadModal);
-    dataModalCopy.addEventListener('click', copyModal);
-    foldSyncEl.addEventListener('change', render);
-    if (lowPowerEl) lowPowerEl.checked = lowPower;
-    lowPowerEl.addEventListener('change', () => {
-      lowPower = lowPowerEl.checked;
-      saveLowPower(lowPower);
-      applyLowPower();
-    });
+    if (fixtureSelect) {
+      fixtureSelect.addEventListener('change', (e) => selectFixture(e.target.value));
+    }
+    if (customResetBtn) {
+      customResetBtn.addEventListener('click', resetCustom);
+    }
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const template = editor ? editor.getValue() : '';
+        const blob = new Blob([template], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentFixture ? currentFixture.name : 'pdl-template'}.template.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        const currentPref = loadThemePreference();
+        const nextPref = currentPref === 'dark' ? 'light' : currentPref === 'light' ? 'dark' : 'light';
+        saveThemePreference(nextPref);
+        applyDocumentTheme(nextPref);
+      });
+    }
+    if (showDataBtn) showDataBtn.addEventListener('click', () => openDataModal('data'));
+    if (showVarsBtn) showVarsBtn.addEventListener('click', () => openDataModal('variables'));
+    if (dataModalSelect) dataModalSelect.addEventListener('change', (e) => setModalModel(e.target.value === 'variables' ? 'variables' : 'data'));
+    if (dataModalClose) dataModalClose.addEventListener('click', closeDataModal);
+    if (dataModalSave) dataModalSave.addEventListener('click', saveModal);
+    if (dataModalDownload) dataModalDownload.addEventListener('click', downloadModal);
+    if (dataModalCopy) dataModalCopy.addEventListener('click', copyModal);
+    if (foldSyncEl) foldSyncEl.addEventListener('change', render);
+    if (lowPowerEl) {
+      lowPowerEl.checked = lowPower;
+      lowPowerEl.addEventListener('change', () => {
+        lowPower = lowPowerEl.checked;
+        saveLowPower(lowPower);
+        applyLowPower();
+      });
+    }
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
@@ -664,6 +790,9 @@
       } else {
         currentFixture.variables = parsed;
       }
+      if (currentFixture && currentFixture.name === CUSTOM_NAME) {
+        persistCustom();
+      }
       modalInitial[modalMode] = JSON.stringify(parsed, null, 2);
       modalDirty[modalMode] = false;
       setModalStatus('Saved');
@@ -841,32 +970,19 @@
     try { localStorage.setItem(THEME_KEY, pref); } catch {}
   }
 
-  // bootstrap
-  const pref = loadThemePreference();
-  applyDocumentTheme(pref);
-  lowPower = loadLowPower();
-  if (lowPowerEl) lowPowerEl.checked = lowPower;
-  wireUi();
-  setupMonaco();
-  injectDirectiveStyles();
-})();
-
   function updateHash(name) {
     if (!name) return;
-    const newHash = `#${encodeURIComponent(name)}`;
-    if (location.hash !== newHash) {
-      history.replaceState(null, "", newHash);
-    }
+    const newHash = `#${encodeURIComponent(hashForFixture(name))}`;
+    // Force hash update immediately on selection (even if only casing/format differs).
+    location.hash = newHash;
   }
 
   function getHashFixture() {
-    const h = location.hash.replace(/^#/, "");
-    if (!h) return null;
-    try {
-      return decodeURIComponent(h);
-    } catch {
-      return h;
-    }
+    const raw = location.hash || '';
+    const decoded = (() => {
+      try { return decodeURIComponent(raw); } catch { return raw; }
+    })();
+    return findFixtureByHash(decoded);
   }
 
   function injectDirectiveStyles() {
@@ -879,3 +995,13 @@
     `;
     document.head.appendChild(style);
   }
+
+  // bootstrap
+  const pref = loadThemePreference();
+  applyDocumentTheme(pref);
+  lowPower = loadLowPower();
+  if (lowPowerEl) lowPowerEl.checked = lowPower;
+  wireUi();
+  setupMonaco();
+  injectDirectiveStyles();
+})();

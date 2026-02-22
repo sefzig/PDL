@@ -6,6 +6,8 @@
 .pg-select, .pg-button { height: 30px; border-radius: 6px; border: 1px solid var(--color-input-border); background: var(--color-input-bg); color: var(--color-text-main); padding: 4px 10px; }
 .pg-button { cursor: pointer; }
 .pg-button.primary { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); }
+.pg-link-button { background: none; border: none; color: var(--color-link); cursor: pointer; padding: 0 8px; margin-left: -8px; font-size: 12px; text-decoration: underline; }
+.pg-link-button:hover { color: var(--color-link-hover); }
 .pg-main { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
 .pg-panel { min-height: 0; display: flex; flex-direction: column; }
 .pg-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-bg-header); }
