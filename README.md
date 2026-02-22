@@ -52,7 +52,7 @@ Tests in `tests/fixtures` are intended to run against both language implementati
 Fixtures follow this naming convention (all parts share the same `XX_name` prefix):
 - `XX_name.template.md` – the PDL template
 - `XX_name.data.json` – the data payload
-- `XX_name.variables.md` – integration-supplied variables (JSON, can be `{}`)
+- `XX_name.variables.json` – integration-supplied variables (JSON, can be `{}`)
 - `XX_name.result.md` – expected rendered output
 
 ## Smoke test

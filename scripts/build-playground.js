@@ -44,7 +44,7 @@ function build() {
   const entries = listPrefixes().map((base) => {
     const tpl = path.join(fixturesDir, `${base}.template.md`);
     const data = path.join(fixturesDir, `${base}.data.json`);
-    const vars = path.join(fixturesDir, `${base}.variables.md`);
+    const vars = path.join(fixturesDir, `${base}.variables.json`);
     const res = path.join(fixturesDir, `${base}.result.md`);
 
     [tpl, data, vars, res].forEach(requireFile);

@@ -36,7 +36,7 @@ function loadFixture(base) {
   const tplPath = path.join(FIXTURE_DIR, `${base}.template.md`);
   const dataPath = path.join(FIXTURE_DIR, `${base}.data.json`);
   const outPath = path.join(FIXTURE_DIR, `${base}.result.md`);
-  const varsPath = path.join(FIXTURE_DIR, `${base}.variables.md`);
+  const varsPath = path.join(FIXTURE_DIR, `${base}.variables.json`);
   if (!fs.existsSync(tplPath)) throw new Error(`Missing template: ${tplPath}`);
   if (!fs.existsSync(dataPath)) throw new Error(`Missing data: ${dataPath}`);
   const template = fs.readFileSync(tplPath, 'utf8');

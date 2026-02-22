@@ -12,10 +12,10 @@ Simple paths
 
 Filtered paths (number)
 * `Screen`
-* `Screen`
+* `Widget`
 * `Demo`
-* `Screen`
-* `Screen`
+* `Widget`
+* `Widget`
 
 Filtered paths (combine)
 * `Widget`
@@ -100,31 +100,31 @@ Inline conditionals
 
 Simple loop
 - `Demo`
-- `Screen`
 - `Widget`
+- `Screen`
 
 Filtered loop
-- `Screen`
 - `Widget`
+- `Screen`
 
 Inline loop
-* `Demo, Screen, Widget`
+* `Demo, Widget, Screen`
 
 Indexed loop
 - `1`: `Demo`
-- `2`: `Screen`
-- `3`: `Widget`
+- `2`: `Widget`
+- `3`: `Screen`
 
 Nested loop
 - `Demo`
   - `1.1`: `Hamburg`
   - `1.2`: `München`
-- `Screen`
-  - `2.1`: `Berlin`
-  - `2.2`: `Hamburg`
 - `Widget`
+  - `2.1`: `Berlin`
+  - `2.2`: `München`
+- `Screen`
   - `3.1`: `Berlin`
-  - `3.2`: `München`
+  - `3.2`: `Hamburg`
 
 ## Directive: Get / Set
 
@@ -145,8 +145,8 @@ Set humble
 
 Set in scope
 - `Demo`
-- `Screen`
 - `Widget`
+- `Screen`
 * `missing`
 
 Unset 
