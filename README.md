@@ -125,8 +125,7 @@ The Langflow custom component is not yet available.
 
 The library can run in the browser as part of any web app. 
 All you need is to add `dist/browser.js` and load it via <script>.
+Run `make build browser` to produce `dist/browser.js`.
 
 # Niceties
 - **VSC**: Do you use Visual Studio Code? A ready-to-package syntax extension lives in `vsc/` to highlight PDL inline in Markdown, inside ```pdl``` fences, and in `.pdl` files. Build a `.vsix` with `npm install && npx vsce package`, then install it via “Extensions → ... → Install from VSIX…”.
-
-Run `make build browser` to produce `dist/browser.js`.
