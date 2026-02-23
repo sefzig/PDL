@@ -22,6 +22,7 @@ build:
 	if [ "$$target" = "n8n" ]; then node scripts/build-n8n.js; \
 	elif [ "$$target" = "playground" ]; then node scripts/build-browser.js && node scripts/build-playground.js; \
 	elif [ "$$target" = "browser" ]; then node scripts/build-browser.js; \
+	elif [ "$$target" = "langflow" ]; then python3 scripts/build-langflow.py; \
 	else echo "Unknown build target: $$target"; exit 1; fi
 
 .PHONY: test

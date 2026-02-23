@@ -119,7 +119,19 @@ Build and paste:
 
 ## Langflow
 
-The Langflow custom component is not yet available.
+The repository ships a Langflow custom component that wraps the Python PDL engine (inlined for portability).
+
+Inputs exposed in Langflow:
+- `Template` (string): prompt template with PDL directives
+- `Template (wired)` (Message, optional): overrides `Template` when wired and non-empty
+- `JSON` (string): JSON text used as data source
+- `JSON (Data handle)` (Data, optional): alternative input; uses `.value`/`.data` if dict/list or JSON string
+- `Header Level` (dropdown): baseline heading level, default `#`
+- `Drop First Header` (bool): drop the first ATX header line and its following blank line, if present
+
+Build and add:
+1) `make build langflow` to regenerate `dist/langflow.py`.
+2) Import `dist/langflow.py` into Langflow (e.g., Components → Upload in the UI, or place the file in your Langflow `components/` directory and restart).
 
 ## Browsers
 
