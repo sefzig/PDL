@@ -86,17 +86,6 @@ Tests can be run accross the fixtures:
 
 Flags for language, fixtures, and updates can be combined freely.
 
-# Playground 
-
-## Build
-
-Run `make build playground` to produce a browser bundle and a fixtures manifest. 
-
-## Use
-
-Open `playground/index.html` in your browser and choose from the provided fixtures.
-In the app, you can work on your own persisted template (`Custom`).
-
 # Integrations
 
 The library can be included in other apps and systems. 
@@ -142,5 +131,20 @@ Build and add:
 2) Add `dist/browser.js` to your app
 3) Load it via <script> tag.
 
+# Playground 
+
+In the playground, you can test all PDL fixtures and work on your Custom one.
+
+## Build
+
+Run `make build playground` to produce a browser bundle and a fixtures manifest. 
+
+## Use
+
+Open `playground/index.html` in your browser and choose from the provided fixtures.
+In the app, the fixture (`Custom`) is persisted in your Local Storage until you reset it.
+Use the Export function to produce fixture files for other systems.
+
 # Niceties
+
 - **VSC**: Do you use Visual Studio Code? A ready-to-package syntax extension lives in `vsc/` to highlight PDL inline in Markdown, inside ```pdl``` fences, and in `.pdl` files. Build a `.vsix` with `npm install && npx vsce package`, then install it via “Extensions → ... → Install from VSIX…”.
