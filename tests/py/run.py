@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Smoke runner for the Python PDL lib.
+"""Dependency-free fixture runner for the Python PDL port.
 
-Iterates shared fixtures (JSON + MD) and calls the Python render function.
-Currently the render function is a placeholder; this runner will surface that.
+Loads shared fixtures, renders with Python PDL, compares to expected markdown,
+and exits non-zero on mismatch. No external deps required.
 """
 
 import json
@@ -17,29 +17,71 @@ from pdl import render  # type: ignore  # noqa: E402
 
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures"
 
+COL = {
+    "green": "\033[32m",
+    "red": "\033[31m",
+    "dim": "\033[2m",
+    "reset": "\033[0m",
+}
 
-def load_fixtures():
-    for json_path in FIXTURES_DIR.glob("*.json"):
-        base = json_path.stem
-        md_path = FIXTURES_DIR / f"{base}.md"
-        if not md_path.exists():
-            raise FileNotFoundError(f"Missing template for fixture {base}: {md_path}")
-        with json_path.open("r", encoding="utf-8") as f_json:
-            data = json.load(f_json)
-        with md_path.open("r", encoding="utf-8") as f_md:
-            template = f_md.read()
-        yield base, data, template
+
+def green(text: str) -> str:
+    return f"{COL['green']}{text}{COL['reset']}"
+
+
+def red(text: str) -> str:
+    return f"{COL['red']}{text}{COL['reset']}"
+
+
+def load_fixtures(prefix=None):
+    for tpl_path in sorted(FIXTURES_DIR.glob("*.template.md")):
+        base = tpl_path.stem.replace(".template", "")
+        if prefix and not base.startswith(prefix):
+            continue
+        data_path = FIXTURES_DIR / f"{base}.data.json"
+        vars_path = FIXTURES_DIR / f"{base}.variables.json"
+        if not data_path.exists():
+            continue
+        with tpl_path.open("r", encoding="utf-8") as f_tpl:
+            template = f_tpl.read()
+        with data_path.open("r", encoding="utf-8") as f_data:
+            data = json.load(f_data)
+        variables = {}
+        if vars_path.exists():
+            with vars_path.open("r", encoding="utf-8") as f_vars:
+                variables = json.load(f_vars)
+        yield base, data, template, variables
 
 
 def main():
-    for name, data, template in load_fixtures():
-        print(f"\n=== {name} ===")
+    prefix = sys.argv[1] if len(sys.argv) > 1 else None
+    failed = 0
+    total = 0
+    for name, data, template, variables in load_fixtures(prefix):
+        total += 1
         try:
-            result = render(template, data)
-            markdown = result[0] if isinstance(result, (list, tuple)) else result
-            print(markdown if markdown is not None else "<no output>")
+            result = render(template, data, {"variables": variables})
+            markdown = result["markdown"] if isinstance(result, dict) else result
+            expected_path = FIXTURES_DIR / f"{name}.result.md"
+            with expected_path.open("r", encoding="utf-8") as f_exp:
+                expected = f_exp.read()
+
+            actual_norm = markdown if markdown.endswith("\n") else markdown + "\n"
+            expected_norm = expected if expected.endswith("\n") else expected + "\n"
+
+            if actual_norm != expected_norm:
+                failed += 1
+                print(f"{red('✗')} {name}")
+            else:
+                print(f"{green('✓')} {name}")
         except Exception as exc:  # pylint: disable=broad-except
-            print(f"Error: {exc}")
+            failed += 1
+            print(f"{red('✗')} {name} (error: {exc})")
+
+    if failed:
+        print(f"\n{red('✖ fail')} ({failed}/{total} failed)")
+        sys.exit(1)
+    print(f"{green('✔ pass')} ({total}/{total} passed)")
 
 
 if __name__ == "__main__":

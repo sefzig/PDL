@@ -36,7 +36,7 @@ test:
 			if [ -n "$$key" ]; then node tests/js/test.js $$key; else node tests/js/test.js; fi; \
 		fi; \
 	else \
-		python3 tests/py/test.py $$key; \
+		if [ -n "$$key" ]; then python3 tests/py/run.py $$key; else python3 tests/py/run.py; fi; \
 	fi
 
 # Swallow extra goals (like fixture keys / update) so make doesn't error.

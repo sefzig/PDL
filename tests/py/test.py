@@ -1,60 +1,59 @@
 #!/usr/bin/env python3
-"""
-Placeholder Python test runner.
-Iterates fixtures and marks each as failed until the Python renderer is implemented.
-Keeps `make test` failing as a reminder.
-"""
+"""Fixture-driven tests for the Python PDL port."""
+
+from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
+import pytest
 
-def color(code: str) -> str:
-    return f"\033[{code}m"
-
-
-COL_RED = color("31")
-COL_GREEN = color("32")
-COL_DIM = color("2")
-COL_RESET = color("0")
+from pdl import render
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_DIR = ROOT / "fixtures"
 
 
 def load_fixtures():
+    cases = []
     for tpl_path in sorted(FIXTURE_DIR.glob("*.template.md")):
         base = tpl_path.stem.replace(".template", "")
-        json_path = FIXTURE_DIR / f"{base}.data.json"
-        out_path = FIXTURE_DIR / f"{base}.result.md"
-        yield base, tpl_path, json_path, out_path
+        data_path = FIXTURE_DIR / f"{base}.data.json"
+        result_path = FIXTURE_DIR / f"{base}.result.md"
+        variables_path = FIXTURE_DIR / f"{base}.variables.json"
 
-
-def main():
-    args = [a for a in sys.argv[1:] if a != "update"]
-    key = args[0] if args else None
-    selected = []
-    for base, tpl, js, outp in load_fixtures():
-        if key and not base.startswith(key):
+        if not data_path.exists() or not result_path.exists():
             continue
-        selected.append((base, tpl, js, outp))
 
-    if not selected:
-        print(f"{COL_RED}✗{COL_RESET} no fixtures match", file=sys.stderr)
-        sys.exit(1)
+        with tpl_path.open("r", encoding="utf-8") as f_tpl:
+            template = f_tpl.read()
+        with data_path.open("r", encoding="utf-8") as f_data:
+            data = json.load(f_data)
+        with result_path.open("r", encoding="utf-8") as f_res:
+            expected = f_res.read()
 
-    failed = 0
-    for base, tpl, js, outp in selected:
-        print(f"{COL_RED}✗{COL_RESET} {base}")
-        failed += 1
+        variables = {}
+        if variables_path.exists():
+            with variables_path.open("r", encoding="utf-8") as f_vars:
+                variables = json.load(f_vars)
 
-    if failed:
-        print(f"{COL_RED}✖ fail{COL_RESET} ({failed}/{len(selected)} failed)")
-        sys.exit(1)
-    else:
-        print(f"{COL_GREEN}✔ pass{COL_RESET} ({len(selected)}/{len(selected)} passed)")
+        cases.append((base, template, data, variables, expected))
+    return cases
 
 
-if __name__ == "__main__":
-    main()
+@pytest.mark.parametrize("base,template,data,variables,expected", load_fixtures())
+def test_fixtures_match_js(base, template, data, variables, expected):
+    result = render(template, data, {"variables": variables})
+    assert result["markdown"] == expected, f"Fixture {base} mismatch"
+
+
+def test_condense_unmatched_tokens_are_removed():
+    template = "[condense]A\nB[condense-end] [condense]X[condense-end]"
+    out = render(template, {}, {})["markdown"]
+    assert out == "A B X"
+
+
+def test_time_invalid_unit_increments_parse_error():
+    res = render("[value:x time=\"%H\" unit=fortnight]", {"x": 5}, {})
+    assert res["rawStats"].errors_parse == 1
+    assert res["markdown"] == "[invalid time]"

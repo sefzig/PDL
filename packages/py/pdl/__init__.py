@@ -1,18 +1,5 @@
-"""
-PDL Python entrypoint (source-only for now).
+"""Python PDL entrypoint – mirrors the JS surface."""
 
-TODO: port the Langflow implementation and expose a real render function.
-"""
+from .pdl import PDL, PDLParser, PostFormat, RenderStats, render
 
-from typing import Any, Dict, Tuple
-
-
-def render(
-    template: str,
-    data: Dict[str, Any],
-    *,
-    header_indentation: str = "#",
-    drop_first_header: bool = False,
-) -> Tuple[str, Dict[str, Any]]:
-    """Render PDL template against data (placeholder)."""
-    raise NotImplementedError("PDL Python render not implemented yet.")
+__all__ = ["render", "PDL", "PDLParser", "PostFormat", "RenderStats"]

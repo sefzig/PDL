@@ -31,7 +31,7 @@ tests/
 
 # Directives
 
-PDL uses its own syntax to fuse data with a text template. 
+PDL uses its own syntax to bake data into your text. 
 The main elements are `[directives:...]`, which describe the logic that creates text from data.
 
 * `[value:...]`   Retrieve a value from the data and format it
@@ -73,8 +73,11 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 
 - Full suite (JS + PY): `make test`
 - Deterministic tests (JS only): `make test js`
+- Deterministic tests (Python only): `make test py`
 - Deterministic tests (JS and fixture 01 only): `make test js 01`
 - Refresh expected outputs: add `update`, e.g., `make test js 01 update`
+
+Python renderer parity checks (uses shared fixtures): `python3 tests/py/run.py`
 
 # Integrations
 
