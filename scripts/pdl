@@ -18,8 +18,7 @@ case "$LANG" in
     node "$ROOT/tests/js/run.js" ${KEY:+$KEY}
     ;;
   py)
-    echo "Python runner not wired yet; implement packages/py first." >&2
-    exit 1
+    python3 "$ROOT/tests/py/run_render.py" ${KEY:+$KEY}
     ;;
   *)
     echo "Unknown target: $LANG (use js|py)" >&2

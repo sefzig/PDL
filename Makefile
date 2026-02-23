@@ -7,7 +7,11 @@
 
 run:
 	@set -- $(filter-out $@,$(MAKECMDGOALS)); \
-	lang=$${1:-js}; key=$${2:-}; \
+	lang="js"; key=""; \
+	for arg in "$$@"; do \
+		if [ "$$arg" = "js" ] || [ "$$arg" = "py" ]; then lang="$$arg"; \
+		elif [ -z "$$key" ]; then key="$$arg"; fi; \
+	done; \
 	if [ "$$lang" = "js" ]; then ./scripts/pdl js $$key; \
 	elif [ "$$lang" = "py" ]; then ./scripts/pdl py $$key; \
 	else echo "Unknown language: $$lang (use js|py)"; exit 1; fi
@@ -17,6 +21,7 @@ build:
 	target=$${1:-n8n}; \
 	if [ "$$target" = "n8n" ]; then node scripts/build-n8n.js; \
 	elif [ "$$target" = "playground" ]; then node scripts/build-browser.js && node scripts/build-playground.js; \
+	elif [ "$$target" = "browser" ]; then node scripts/build-browser.js; \
 	else echo "Unknown build target: $$target"; exit 1; fi
 
 .PHONY: test

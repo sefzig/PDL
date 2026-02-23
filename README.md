@@ -46,11 +46,11 @@ The normative, machine-readable contract for PDL lives in `README.yaml`.
 
 # Testing
 
-The library can be tested in the playground and your terminal.
+The library can be tested in terminal (and the playground). 
 
 ## Fixtures
 
-Tests in `tests/fixtures` are intended to run against both language implementations with aligned behaviour.
+Tests in `tests/fixtures` run against both language implementations.
 
 Fixtures follow this naming convention (all parts share the same `XX_name` prefix):
 - `XX_name.data.json` – the data payload
@@ -60,27 +60,39 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 
 ## Smoke test
 
-- Run all JS fixtures: `make run js`
-- Run a single JS fixture: `make run js 01`
+You can render a fixture right in your terminal:
+- Run all fixtures:                `make run`
+- Run fixtures with Javascript:    `make run js`
+- Run fixtures with Python:        `make run py`
+- Run a single fixture:            `make run 01`
 
-## Playground build
-
-- Build the browser bundle + fixtures manifest for the playground: `make build playground`
-- Open `playground/index.html` in a browser (loads `dist/browser.js` and `playground/fixtures.json`)
-- Choose from the provided fixtures or create your Custom template.
+If no language is chosen, the commands default to `js`.
 
 ## Golden output
 
+Tests can be run accross the fixtures:
 - Test all fixtures and languages: `make test`
 - Test all fixtures in Javascript: `make test js`
 - Test all fixtures with Python:   `make test py`
 - Test specific fixtures:          `make test 01`
 - Test and update fixture results: `make test update`
 
+Flags for language, fixtures, and updates can be combined freely.
+
+# Playground 
+
+## Build
+
+Run `make build playground` to produce a browser bundle and a fixtures manifest. 
+
+## Use
+
+Open `playground/index.html` in your browser and choose from the provided fixtures.
+In the app, you can work on your own persisted template (`Custom`).
+
 # Integrations
 
-The library can be included in other systems. 
-This sections describes the integrations as well as the build process for them.
+The library can be included in other apps and systems. 
 
 ## n8n
 
@@ -100,4 +112,11 @@ Build and paste:
 
 ## Langflow
 
-The Langflow component is not yet available.
+The Langflow custom component is not yet available.
+
+## Browsers
+
+PDL (Javascript) can run in the browser as part of any web app. 
+All you need is to drop the bundle in and load via <script>.
+
+Run `make build browser` to produce `dist/browser.js`.

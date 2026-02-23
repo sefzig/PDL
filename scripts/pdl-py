@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Convenience wrapper placeholder for the future Python PDL runner.
+# Convenience wrapper to run the Python PDL fixtures (smoke render).
 
 set -euo pipefail
 
-echo "Python runner not available yet." >&2
-exit 1
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+python3 "$ROOT/tests/py/run_render.py" "$@"
