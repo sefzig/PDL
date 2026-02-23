@@ -1,0 +1,129 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Prompt Data Language",
+  "scopeName": "source.pdl",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#directives" },
+    { "include": "#variables" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.pdl",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "meta.variable.pdl",
+          "begin": "\\{",
+          "beginCaptures": { "0": { "name": "punctuation.definition.bracket.curly.begin.pdl" } },
+          "end": "\\}",
+          "endCaptures": { "0": { "name": "punctuation.definition.bracket.curly.end.pdl" } },
+          "patterns": [
+            {
+              "name": "variable.other.readwrite.pdl",
+              "match": "[^}]+"
+            }
+          ]
+        }
+      ]
+    },
+    "directives": {
+      "patterns": [
+        {
+          "name": "meta.directive.pdl",
+          "begin": "\\[",
+          "beginCaptures": { "0": { "name": "punctuation.section.brackets.begin.pdl" } },
+          "end": "\\]",
+          "endCaptures": { "0": { "name": "punctuation.section.brackets.end.pdl" } },
+          "patterns": [
+            { "include": "#directives" },
+            { "include": "#variables" },
+            { "include": "#strings" },
+            { "include": "#optionKey" },
+            { "include": "#operators" },
+            { "include": "#keywords" },
+            {
+              "name": "constant.numeric.decimal.pdl",
+              "match": "\\b\\d+\\b"
+            },
+            {
+              "name": "variable.parameter.path.pdl",
+              "match": "[A-Za-z_][\\w-]*"
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.directive.pdl",
+          "match": "(?x)\\b(
+            value|
+            if-elif|
+            if-else|
+            if-end|
+            if|
+            loop-end|
+            loop|
+            set|
+            get|
+            condense|
+            condense-end
+          )\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.directive.pdl",
+          "match": "<=|>=|!=|\\^=|\\$=|\\*=|=|<|>|&|\\||::?|\\."
+        }
+      ]
+    },
+    "optionKey": {
+      "patterns": [
+        {
+          "name": "meta.option.pdl",
+          "match": "([A-Za-z_][\\w-]*)(=)(?![!<>=^$*])",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.pdl" },
+            "2": { "name": "keyword.operator.assignment.pdl" }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.pdl",
+          "begin": "\"",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.pdl" } },
+          "end": "\"",
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.pdl" } },
+          "patterns": [
+            { "match": "\\\\.", "name": "constant.character.escape.pdl" }
+          ]
+        },
+        {
+          "name": "string.quoted.single.pdl",
+          "begin": "'",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.pdl" } },
+          "end": "'",
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.pdl" } },
+          "patterns": [
+            { "match": "\\\\.", "name": "constant.character.escape.pdl" }
+          ]
+        }
+      ]
+    }
+  },
+  "scopeName": "source.pdl"
+}

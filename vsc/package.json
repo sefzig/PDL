@@ -1,0 +1,42 @@
+{
+  "name": "pdl",
+  "displayName": "Prompt Data Language",
+  "publisher": "Andreas Sefzig",
+  "description": "Syntax highlighting for PDL in VS Code (inline Markdown, fenced blocks, and .pdl files).",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "pdl",
+        "aliases": ["PDL", "Prompt Data Language"],
+        "extensions": [".pdl"],
+        "filenames": [],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pdl",
+        "scopeName": "source.pdl",
+        "path": "./syntaxes/pdl.tmLanguage.json"
+      },
+      {
+        "scopeName": "pdl.inline.markdown",
+        "path": "./syntaxes/pdl-injection.tmLanguage.json",
+        "injectTo": ["text.html.markdown"],
+        "embeddedLanguages": {
+          "meta.embedded.block.pdl": "pdl"
+        }
+      }
+    ]
+  },
+  "activationEvents": [
+    "onLanguage:pdl"
+  ]
+}

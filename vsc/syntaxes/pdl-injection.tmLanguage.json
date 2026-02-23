@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "PDL in Markdown",
+  "scopeName": "pdl.inline.markdown",
+  "injectionSelector": "L:markup.fenced_code.block.markdown, L:markup.raw.block.markdown, L:markup.inline.raw.string.markdown, L:text.html.markdown",
+  "patterns": [
+    { "include": "#fencedPdl" },
+    { "include": "#inlineDirectives" }
+  ],
+  "repository": {
+    "fencedPdl": {
+      "patterns": [
+        {
+          "name": "meta.embedded.block.pdl.markdown",
+          "begin": "(^|\n)\s*```pdl\s*$",
+          "beginCaptures": { "0": { "name": "punctuation.definition.markdown" } },
+          "end": "^\s*```\s*$",
+          "endCaptures": { "0": { "name": "punctuation.definition.markdown" } },
+          "patterns": [
+            { "include": "source.pdl" }
+          ]
+        }
+      ]
+    },
+    "inlineDirectives": {
+      "patterns": [
+        {
+          "name": "meta.directive.inline.pdl.markdown",
+          "begin": "\\[",
+          "beginCaptures": { "0": { "name": "punctuation.section.brackets.begin.pdl" } },
+          "end": "\\]",
+          "endCaptures": { "0": { "name": "punctuation.section.brackets.end.pdl" } },
+          "patterns": [
+            { "include": "source.pdl#directives" },
+            { "include": "source.pdl#variables" },
+            { "include": "source.pdl#strings" },
+            { "include": "source.pdl#optionKey" },
+            { "include": "source.pdl#operators" },
+            { "include": "source.pdl#keywords" },
+            {
+              "name": "constant.numeric.decimal.pdl",
+              "match": "\\b\\d+\\b"
+            },
+            {
+              "name": "variable.parameter.path.pdl",
+              "match": "[A-Za-z_][\\w-]*"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
