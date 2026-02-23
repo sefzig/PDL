@@ -33,6 +33,12 @@ globals:
     invalid_time: "[invalid time]"
   root_normalization:
     unwrap_singleton_root_array: true   # render() unwraps top-level [ {..} ] before resolution
+  highlight_wrapping:
+    hlBefore_default: ""                # render option default
+    hlAfter_default: ""                 # render option default
+    enabled_when: not_both_empty_or_both_false
+    applies_to_directives: [value, get]
+    directive_opt_out: hl=false
 
 directives:
   value:
@@ -71,6 +77,7 @@ directives:
       date: string                      # date formatting tokens %Y %y %m %d %H %M %S %L
       time: string                      # duration formatting tokens %Y %y %m %d %H %M %S %L
       unit: [ms|s|m|h|d] (default ms for durations)
+      hl: boolean (default true)        # wrap output with highlight markers unless false
     success_condition: resolved_after_fallback
     failure_handling:
       null_resolution:
@@ -179,6 +186,7 @@ directives:
       success: string
       failure: string
       default: unsupported_parse_error   # presence increments errors_parse and ignored
+      hl: boolean (default true)        # wrap output with highlight markers unless false
     behavior:
       lookup: variables_only
       success_condition: resolved_before_fallback

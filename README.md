@@ -42,6 +42,13 @@ The main elements are `[directives:...]`, which describe the logic that will cre
 
 Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md), if you have gone through the tutorial already). Both are available in the interactive playground.
 
+## Highlight wrappers
+
+- Render options `hlBefore` / `hlAfter` (JS/Py) default to empty strings; wrapping activates when at least one marker is non-empty and both aren’t `false`.
+- `[value:...]` and `[get:...]` outputs are wrapped after transforms unless `hl=false` is set on the directive.
+- A light heuristic widens the wrap to the full Markdown link/image or HTML attribute when the directive is used as the URL/attribute value.
+- Defaults keep current output unchanged until configured.
+
 The normative, machine-readable contract for PDL lives in `README.yaml`.
 
 # Testing

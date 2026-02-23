@@ -2,84 +2,84 @@
 
 ## Global Variables
 
-* `Screen`
+* Screen
 
 ## Directive: Value
 
 Simple paths
-* `Digital`
-* `[value:release.hero.fallback]`
+* Digital
+* Widget
 
 Filtered paths (number)
-* `Screen`
-* `Widget`
-* `Demo`
-* `Widget`
-* `Widget`
+* Screen
+* Widget
+* Demo
+* Widget
+* Widget
 
 Filtered paths (combine)
-* `Widget`
-* `Demo`
+* Widget
+* Demo
 
 Filtered paths (string)
-* `30`
-* `Widget`
-* `Widget`
-* `Widget`
-* `Widget`
+* 30
+* Widget
+* Widget
+* Widget
+* Widget
 
 Fallback paths
-* `Digital`
-* `Screen`
-* `missing`
+* Digital
+* Screen
+* missing
 
 Nested values
-* `[value:products[name=[value:release.hero.fallback]].price]`
+* 10
 
 Existence option
-* `yes`
-* `no`
+* yes
+* no
 
 Replace values
-* `Presentation`
-* `Dee`
-* `**digital**`
+* Presentation
+* Dee
+* **digital**
 
 Trim values
-* `digital`
-* `Digital`
-* `DIGITAL`
-* `digital`
+* digital
+* Digital
+* DIGITAL
+* digital
 
 Tuncate values
-* `Lorem ipsum`
-* `Lorem ipsum"..."`
-* `30`
+* Lorem ipsum
+* Lorem ipsum"..."
+* 30
 
 Format casing
-* `diGiTaLProduct`
-* `DiGiTaLProduct`
-* `di_gi_ta_l_product`
-* `DI_GI_TA_L_PRODUCT`
+* diGiTaLProduct
+* DiGiTaLProduct
+* di_gi_ta_l_product
+* DI_GI_TA_L_PRODUCT
 
 Format dates
-* `[value:release.launch.dateUtc date="%d.%m.%Y"]`
-* `[value:release.launch.announceLocal date="%d.%m.%Y %H:%M Uhr"]`
-* `[value:release.events.launchEpoch date="%d. %B %Y, %H:%M Uhr"]`
+* 06.02.2026
+* 01.02.2026 09:00 Uhr
+* 06. %B 2026, 11:00 Uhr
 
 Format time
-* `[value:release.campaign.durationMs time="%d %H %M"]`
-* `[value:release.events.pressConferenceSec time="%H %M" unit=s]`
+* 7 days
+* 1 hour 30 minutes
 
 Escape Markdown
-* `[value:release.campaign.noteMd]`
-* `[value:release.campaign.noteMd escapeMarkdown=true]`
+* Launch **Today**
+* Launch \*\*Today\*\*
 
 Stringify data
-* `"Digital"`
-* `30`
-* `{"name":"Demo","price":0,"locations":["Hamburg","München"]}`
-* `["Hamburg","München"]`
+* "Digital"
+* 30
+* {"name":"Demo","price":0,"locations":["Hamburg","München"]}
+* ["Hamburg","München"]
 
 ## Directive: Conditional
 
@@ -87,70 +87,70 @@ Block conditional:
 - Premium
 
 Inline conditionals
-* `confirms`
-* `available`
-* `missing`
-* `match`
-* `prefix`
-* `contains`
-* `suffix`
-* `ci-match`
+* confirms
+* available
+* exists
+* match
+* prefix
+* contains
+* suffix
+* ci-match
 
 ## Directive: Loop
 
 Simple loop
-- `Demo`
-- `Widget`
-- `Screen`
+- Demo
+- Widget
+- Screen
 
 Filtered loop
-- `Widget`
-- `Screen`
+- Widget
+- Screen
 
 Inline loop
-* `Demo, Widget, Screen`
+* Demo, Widget, Screen
 
 Indexed loop
-- `1`: `Demo`
-- `2`: `Widget`
-- `3`: `Screen`
+- 1: Demo
+- 2: Widget
+- 3: Screen
 
 Nested loop
-- `Demo`
-  - `1.1`: `Hamburg`
-  - `1.2`: `München`
-- `Widget`
-  - `2.1`: `Berlin`
-  - `2.2`: `München`
-- `Screen`
-  - `3.1`: `Berlin`
-  - `3.2`: `Hamburg`
+- Demo
+  - 1.1: Hamburg
+  - 1.2: München
+- Widget
+  - 2.1: Berlin
+  - 2.2: München
+- Screen
+  - 3.1: Berlin
+  - 3.2: Hamburg
 
 ## Directive: Get / Set
 
 Regular set 
-* `Screen Launch`
+* Screen Launch
 
 Mutable set 
-* `Revised`
+* Revised
 
 Set array 
-* `Web and Email`
+* Web and Email
 
 Get trimmed 
-* `Digital`
+* Digital
 
 Set humble 
-* `Digital`
+* Digital
 
 Set in scope
-- `Demo`
-- `Widget`
-- `Screen`
-* `missing`
+- Demo
+- Widget
+- Screen
+* missing
 
 Unset 
-* `[get:feature]`
+* [get:feature]
 
 ## Directive: Condense
 

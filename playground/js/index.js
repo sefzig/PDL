@@ -89,6 +89,10 @@
     populateSelect();
   }
 
+  // Playground-only default highlight markers to visualize directive outputs
+  window.PDL.HL_BEFORE = '`';
+  window.PDL.HL_AFTER = '`';
+
   function loadCustomFromStorage() {
     try {
       const raw = localStorage.getItem(CUSTOM_KEY);
@@ -198,7 +202,11 @@
     let markdown = '';
     let renderResult = null;
     try {
-      renderResult = window.PDL.render(template, currentFixture.data || {}, { variables: currentFixture.variables || {} });
+      renderResult = window.PDL.render(template, currentFixture.data || {}, {
+        variables: currentFixture.variables || {},
+        hlBefore: window.PDL.HL_BEFORE,
+        hlAfter: window.PDL.HL_AFTER,
+      });
       markdown = renderResult.markdown || '';
       statusEl.textContent = `rendered (${markdown.length} chars)`;
 

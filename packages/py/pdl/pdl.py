@@ -50,6 +50,9 @@ class PDL:
     INVALID_DATE_DEFAULT = "[invalid date]"
     INVALID_TIME_DEFAULT = "[invalid time]"
 
+    HL_BEFORE = ""
+    HL_AFTER = ""
+
 
 VAR_NAME_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
@@ -495,13 +498,66 @@ def parse_scalar_or_json(raw: str) -> Any:
 def escape_regexp(s: str) -> str:
     return re.sub(r"[.*+?^${}()|[\]\\]", r"\\\\&", str(s))
 
+def highlight_config(before: Any, after: Any) -> dict:
+    b = before
+    a = after
+    enabled = not ((b == "" and a == "") or (b is False and a is False))
+    return {"enabled": enabled, "before": b, "after": a}
 
-def apply_string_variables(template: str, vars: Dict[str, Any] | None = None) -> str:
-    out = str(template or "")
-    for k, v in (vars or {}).items():
-        val = "" if v is None else str(v)
-        out = re.sub(rf"\{{{escape_regexp(k)}\}}", val, out)
+
+def wrap_highlight(text: str, highlight: dict, hl_flag: bool = True) -> str:
+    if not highlight or not highlight.get("enabled") or hl_flag is False:
+        return text
+    before = "" if highlight.get("before") is None else str(highlight.get("before"))
+    after = "" if highlight.get("after") is None else str(highlight.get("after"))
+    return f"{before}{text}{after}"
+
+
+def apply_highlight_heuristics(text: str, highlight: dict) -> str:
+    if not highlight or not highlight.get("enabled"):
+        return text
+    before = str(highlight.get("before") or "")
+    after = str(highlight.get("after") or "")
+    b_esc = escape_regexp(before)
+    a_esc = escape_regexp(after)
+    out = str(text)
+
+    link_re = re.compile(rf"(\\!?\\[[^\\]]*\\]\\()\\s*{b_esc}(.*?){a_esc}\\s*(\\))")
+    out = link_re.sub(rf"{before}\1\2\3{after}", out)
+
+    attr_re = re.compile(rf"([A-Za-z_:][-A-Za-z0-9_:.]*\\s*=\\s*\"?){b_esc}(.*?){a_esc}(\"?)")
+    out = attr_re.sub(rf"{before}\1\2\3{after}", out)
+
     return out
+
+
+def apply_string_variables(template: str, vars: Dict[str, Any] | None = None, highlight: Dict[str, Any] | None = None) -> str:
+    s = str(template or "")
+    hl = highlight or {"enabled": False}
+    out = []
+    depth = 0  # bracket depth for directives
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch == "[":
+            depth += 1
+        elif ch == "]" and depth > 0:
+            depth -= 1
+
+        if ch == "{":
+            close = s.find("}", i + 1)
+            if close != -1:
+                name = s[i + 1 : close]
+                if vars is not None and name in vars:
+                    val = "" if vars[name] is None else str(vars[name])
+                    if depth == 0 and hl.get("enabled"):
+                        val = wrap_highlight(val, hl, True)
+                    out.append(val)
+                    i = close + 1
+                    continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 # ================================================================
@@ -538,12 +594,13 @@ class VarBinding:
 
 
 class Scope:
-    def __init__(self, *, root: Any, aliases: Dict[str, Any] | None = None, index_chain: List[int] | None = None, dots: bool = True, var_frames: List[Dict[str, VarBinding]] | None = None):
+    def __init__(self, *, root: Any, aliases: Dict[str, Any] | None = None, index_chain: List[int] | None = None, dots: bool = True, var_frames: List[Dict[str, VarBinding]] | None = None, highlight: Dict[str, Any] | None = None):
         self.root = root
         self.aliases = aliases or {}
         self.index_chain = index_chain or []
         self.dots = dots
         self.var_frames: List[Dict[str, VarBinding]] = var_frames or [dict()]
+        self.highlight = highlight or {}
 
     def get_var_binding(self, name: str) -> Tuple[Optional[VarBinding], Optional[int]]:
         if not VAR_NAME_RE.match(str(name or "")):
@@ -1332,6 +1389,7 @@ class InlineLoopExpander:
                     index_chain=[*scope.index_chain, int(params.get("start", 1)) + k],
                     dots=bool(params.get("dots", True)),
                     var_frames=[*scope.var_frames, {}],
+                    highlight=scope.highlight,
                 )
 
                 seg, drop = InlineIfHelper.apply(body, child_scope, resolver, stats)
@@ -1557,6 +1615,7 @@ def expand_values_and_get_inline(text: str, scope: Scope, resolver: PathResolver
                 "failure": str,
                 "fallback": str,
                 "replace": str,
+                "hl": bool,
             },
             defaults={
                 "escapeMarkdown": False,
@@ -1579,6 +1638,7 @@ def expand_values_and_get_inline(text: str, scope: Scope, resolver: PathResolver
                 "failure": None,
                 "fallback": None,
                 "replace": None,
+                "hl": True,
             },
         )
 
@@ -1757,6 +1817,8 @@ def expand_values_and_get_inline(text: str, scope: Scope, resolver: PathResolver
         if text_out is None:
             text_out = ""
 
+        text_out = wrap_highlight(text_out, scope.highlight if hasattr(scope, "highlight") else getattr(resolver, "highlight", None) or {}, params.get("hl", True))
+
         out += text_out
         i = end + 1
 
@@ -1849,6 +1911,7 @@ class IfBlockDirective:
                 index_chain=scope.index_chain,
                 dots=scope.dots,
                 var_frames=[*scope.var_frames, {}],
+                highlight=scope.highlight,
             ),
             depth + 1,
         )
@@ -1917,6 +1980,7 @@ class LoopBlockDirective:
                 index_chain=new_index,
                 dots=bool(params.get("dots", True)),
                 var_frames=[*scope.var_frames, {}],
+                highlight=scope.highlight,
             )
 
             sub_lines = engine.expand_lines(body, child_scope, depth + 1)
@@ -1944,9 +2008,10 @@ class LoopBlockDirective:
 
 
 class Engine:
-    def __init__(self) -> None:
+    def __init__(self, *, highlight: Dict[str, Any] | None = None) -> None:
         self.resolver = PathResolver()
         self.stats = RenderStats()
+        self.highlight = highlight or {}
         self.block_registry = [LoopBlockDirective(), IfBlockDirective()]
         self.inline_registry = [InlineSetDirective(), InlineLoopExpander(), lambda line, s, r, st: expand_values_and_get_inline(line, s, r, st)]
 
@@ -2183,17 +2248,18 @@ class PostFormat:
 
 
 class PDLParser:
-    def __init__(self, template: str, json_root: Any, *, aliases: Dict[str, Any] | None = None, variables: Dict[str, Any] | None = None) -> None:
+    def __init__(self, template: str, json_root: Any, *, aliases: Dict[str, Any] | None = None, variables: Dict[str, Any] | None = None, highlight: Dict[str, Any] | None = None) -> None:
         self.template = template
         self.json_root = json_root
         self.aliases = aliases or {}
         self.variables = variables or {}
         self.stats = RenderStats()
+        self.highlight = highlight or {}
 
     def render(self) -> Tuple[str, RenderStats]:
         stripped = CommentHandler.strip(self.template)
-        engine = Engine()
-        scope = Scope(root=self.json_root, aliases=self.aliases, index_chain=[], dots=True)
+        engine = Engine(highlight=self.highlight)
+        scope = Scope(root=self.json_root, aliases=self.aliases, index_chain=[], dots=True, highlight=self.highlight)
         if isinstance(self.variables, dict):
             for k, v in self.variables.items():
                 scope.set_var(k, v, const_flag=True)
@@ -2225,13 +2291,20 @@ def render(template: str, data: Dict[str, Any], options: Optional[Dict[str, Any]
     header_indentation = opts.get("headerIndentation", "#")
     drop_first_header = bool(opts.get("dropFirstHeader", False))
     variables = opts.get("variables", {})
+    hl_before_opt = opts.get("hlBefore", None)
+    hl_after_opt = opts.get("hlAfter", None)
+
+    effective_before = PDL.HL_BEFORE if hl_before_opt is None else hl_before_opt
+    effective_after = PDL.HL_AFTER if hl_after_opt is None else hl_after_opt
+    highlight = highlight_config(effective_before, effective_after)
 
     json_root = normalize_root(data)
-    templ_with_vars = apply_string_variables(str(template or ""), variables)
+    templ_with_vars = apply_string_variables(str(template or ""), variables, highlight)
 
-    parser = PDLParser(templ_with_vars, json_root, aliases={"data": json_root}, variables=variables)
+    parser = PDLParser(templ_with_vars, json_root, aliases={"data": json_root}, variables=variables, highlight=highlight)
     expanded_text, stats = parser.render()
 
+    expanded_text = apply_highlight_heuristics(expanded_text, highlight)
     expanded_text = PostFormat.drop_first_header_line(expanded_text, drop_first_header)
     expanded_text = PostFormat.apply_header_level_preset(expanded_text, str(header_indentation or "#"))
 
