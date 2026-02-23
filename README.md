@@ -31,8 +31,8 @@ tests/
 
 # Directives
 
-PDL uses its own syntax to bake data into your text. 
-The main elements are `[directives:...]`, which describe the logic that creates text from data.
+PDL uses its own syntax to bake data into the template text. 
+The main elements are `[directives:...]`, which describe the logic that will create text from data.
 
 * `[value:...]`   Retrieve a value from the data and format it
 * `[loop:...]`    Iterate over a list of data and use advanced matching
