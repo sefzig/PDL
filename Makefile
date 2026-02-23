@@ -23,9 +23,9 @@ build:
 
 test:
 	@set -- $(filter-out $@,$(MAKECMDGOALS)); \
-	target="py"; update=0; key=""; \
+	target="both"; update=0; key=""; \
 	for arg in "$$@"; do \
-		if [ "$$arg" = "js" ] || [ "$$arg" = "py" ]; then target="$$arg"; \
+		if [ "$$arg" = "js" ] || [ "$$arg" = "py" ] || [ "$$arg" = "both" ]; then target="$$arg"; \
 		elif [ "$$arg" = "update" ]; then update=1; \
 		elif [ -z "$$key" ]; then key="$$arg"; fi; \
 	done; \
@@ -35,9 +35,11 @@ test:
 		else \
 			if [ -n "$$key" ]; then node tests/js/test.js $$key; else node tests/js/test.js; fi; \
 		fi; \
-	else \
-		if [ -n "$$key" ]; then python3 tests/py/run.py $$key; else python3 tests/py/run.py; fi; \
-	fi
+elif [ "$$target" = "py" ]; then \
+	if [ -n "$$key" ]; then python3 tests/py/run.py $$key; else python3 tests/py/run.py; fi; \
+else \
+	if [ -n "$$key" ]; then node tests/both/test.js $$key; else node tests/both/test.js; fi; \
+fi
 
 # Swallow extra goals (like fixture keys / update) so make doesn't error.
 %:

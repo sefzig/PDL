@@ -71,13 +71,11 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 
 ## Golden output
 
-- Full suite (JS + PY): `make test`
-- Deterministic tests (JS only): `make test js`
-- Deterministic tests (Python only): `make test py`
-- Deterministic tests (JS and fixture 01 only): `make test js 01`
-- Refresh expected outputs: add `update`, e.g., `make test js 01 update`
-
-Python renderer parity checks (uses shared fixtures): `python3 tests/py/run.py`
+- Test all fixtures and languages: `make test`
+- Test all fixtures in Javascript: `make test js`
+- Test all fixtures with Python:   `make test py`
+- Test specific fixtures:          `make test 01`
+- Test and update fixture results: `make test update`
 
 # Integrations
 
