@@ -1,4 +1,7 @@
+.DS_Store
 original/
 dist/*
 tests/fixtures/03_*
 tests/fixtures/04_*
+tests/fixtures/05_*
+playground/fixtures-local.json

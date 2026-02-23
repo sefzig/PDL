@@ -139,9 +139,14 @@ In the playground, you can test all PDL fixtures and work on your Custom one.
 
 Run `make build playground` to produce a browser bundle and a fixtures manifest. 
 
+The build now emits two manifests:
+- `playground/fixtures.json` — tracked fixtures (gitignore-filtered)
+- `playground/fixtures-local.json` — all local fixtures, including gitignored ones (ignored by git)
+
 ## Use
 
 Open `playground/index.html` in your browser and choose from the provided fixtures.
+The playground will try to load `fixtures-local.json` first (if present); it falls back to `fixtures.json` and blends both, with local entries overriding bundled ones. Only fixtures that exist *only* locally are marked “local” in the UI; public fixtures that are overridden locally stay unmarked.
 In the app, the fixture (`Custom`) is persisted in your Local Storage until you reset it.
 Use the Export function to produce fixture files for other systems.
 

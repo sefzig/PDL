@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Build a browser-friendly fixtures manifest for the playground.
+ * Build browser-friendly fixtures manifests for the playground.
  *
- * Output: playground/fixtures.json
+ * Outputs:
+ * - playground/fixtures.json        (tracked fixtures only)
+ * - playground/fixtures-local.json  (all local fixtures, including gitignored)
  */
 
 const fs = require('fs');
@@ -12,8 +14,9 @@ const { execSync } = require('child_process');
 const repoRoot = path.join(__dirname, '..');
 const fixturesDir = path.join(repoRoot, 'tests/fixtures');
 const outPath = path.join(repoRoot, 'playground/fixtures.json');
+const outLocalPath = path.join(repoRoot, 'playground/fixtures-local.json');
 
-function listPrefixes() {
+function listTrackedPrefixes() {
   const output = execSync('git ls-files tests/fixtures', {
     cwd: repoRoot,
     encoding: 'utf8',
@@ -24,6 +27,13 @@ function listPrefixes() {
     .filter((f) => f.endsWith('.template.md'))
     .map((f) => path.basename(f).replace(/\.template\.md$/, ''))
     .sort();
+}
+
+function listAllPrefixes() {
+  const entries = fs.readdirSync(fixturesDir, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith('.template.md'))
+    .map((d) => d.name.replace(/\.template\.md$/, ''));
+  return Array.from(new Set(entries)).sort();
 }
 
 function requireFile(file) {
@@ -40,8 +50,8 @@ function loadJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function build() {
-  const entries = listPrefixes().map((base) => {
+function buildManifest(prefixes, outFile) {
+  const entries = prefixes.map((base) => {
     const tpl = path.join(fixturesDir, `${base}.template.md`);
     const data = path.join(fixturesDir, `${base}.data.json`);
     const vars = path.join(fixturesDir, `${base}.variables.json`);
@@ -65,9 +75,17 @@ function build() {
     fixtures: entries,
   };
 
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, JSON.stringify(payload, null, 2), 'utf8');
-  console.log(`Built ${path.relative(repoRoot, outPath)} (${entries.length} fixtures)`);
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
+  fs.writeFileSync(outFile, JSON.stringify(payload, null, 2), 'utf8');
+  console.log(`Built ${path.relative(repoRoot, outFile)} (${entries.length} fixtures)`);
+}
+
+function build() {
+  const tracked = listTrackedPrefixes();
+  const allLocal = listAllPrefixes();
+
+  buildManifest(tracked, outPath);
+  buildManifest(allLocal, outLocalPath);
 }
 
 try {

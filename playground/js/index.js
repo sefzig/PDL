@@ -80,13 +80,63 @@
   let mapTplToMd = [];
   let anchorMd = [];
   let anchorTpl = [];
+
+  async function ensureJSZip() {
+    if (window.JSZip) return window.JSZip;
+    const hadDefine = typeof window.define === 'function' && window.define.amd;
+    const defineBackup = window.define;
+    try {
+      if (hadDefine) window.define = undefined; // Force UMD to set window.JSZip
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load JSZip'));
+        document.head.appendChild(script);
+      });
+    } finally {
+      if (hadDefine) window.define = defineBackup;
+    }
+    return window.JSZip;
+  }
   
   async function loadFixtures() {
     loadCustomFromStorage();
-    const res = await fetch(`fixtures.json?_=${Date.now()}`);
-    const json = await res.json();
-    fixtures = json.fixtures || [];
+    const local = await fetchManifest('fixtures-local.json');
+    const bundled = await fetchManifest('fixtures.json');
+    fixtures = mergeFixtures(local, bundled);
     populateSelect();
+  }
+
+  async function fetchManifest(name) {
+    try {
+      const res = await fetch(`${name}?_=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      // Avoid console errors; informational only when local is absent.
+      console.info?.(`Playground: ${name} unavailable, falling back`, err);
+      return null;
+    }
+  }
+
+  function mergeFixtures(localManifest, bundledManifest) {
+    const map = new Map();
+    const bundled = bundledManifest && Array.isArray(bundledManifest.fixtures) ? bundledManifest.fixtures : [];
+    bundled.forEach((f) => map.set(f.name, { ...f, isLocal: false, localOnly: false }));
+
+    const local = localManifest && Array.isArray(localManifest.fixtures) ? localManifest.fixtures : [];
+    local.forEach((f) => {
+      if (map.has(f.name)) {
+        // Local overrides bundled but is still public; no local badge.
+        map.set(f.name, { ...map.get(f.name), ...f, isLocal: false, localOnly: false });
+      } else {
+        // Exists only locally; mark as local-only.
+        map.set(f.name, { ...f, isLocal: true, localOnly: true });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // Playground-only default highlight markers to visualize directive outputs
@@ -144,7 +194,7 @@
     fixtures.forEach((f) => {
       const opt = document.createElement('option');
       opt.value = f.name;
-      opt.textContent = formatFixtureLabel(f.name);
+      opt.textContent = formatFixtureLabel(f);
       fixtureSelect.appendChild(opt);
     });
 
@@ -306,12 +356,14 @@
     return match ? match.name : null;
   }
 
-  function formatFixtureLabel(name) {
+  function formatFixtureLabel(fixture) {
+    const name = fixture && fixture.name ? fixture.name : '';
     const base = (name || '')
       .replace(/^\d+_?/, '')          // drop numeric prefix + optional underscore
       .split('.')[0];                  // drop everything after the first dot (extensions)
     const spaced = base.replace(/[-_]+/g, ' ').trim();
-    return spaced.replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
+    const pretty = spaced.replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
+    return fixture && fixture.localOnly ? `${pretty} (local)` : pretty;
   }
 
   function updateCustomResetVisibility() {
@@ -900,13 +952,18 @@
     const prefix = currentFixture ? currentFixture.name : 'fixture';
     clearTimeout(exportTimeout);
     const allSelected = selected.length === exportSelections.length;
-    if (allSelected) {
-      await downloadZip(prefix, selected);
-      exportModalStatus.textContent = 'Zip download started';
-      exportTimeout = setTimeout(closeExportModal, 3000);
-    } else {
-      selected.forEach(downloadSingle);
-      exportModalStatus.textContent = 'Downloads started';
+    try {
+      if (allSelected) {
+        await downloadZip(prefix, selected);
+        exportModalStatus.textContent = 'Zip download started';
+        exportTimeout = setTimeout(closeExportModal, 3000);
+      } else {
+        selected.forEach(downloadSingle);
+        exportModalStatus.textContent = 'Downloads started';
+      }
+    } catch (err) {
+      console.error(err);
+      exportModalStatus.textContent = 'Download failed — please retry';
     }
     updateBaseline(prefix, selected);
     clearTimeout(exportTimeout);
@@ -923,7 +980,9 @@
   }
 
   async function downloadZip(prefix, items) {
-    const zip = new JSZip();
+    const JSZipLib = await ensureJSZip();
+    if (!JSZipLib) throw new Error('JSZip not available');
+    const zip = new JSZipLib();
     items.forEach((item) => zip.file(item.filename, item.content));
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
