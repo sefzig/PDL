@@ -374,8 +374,15 @@
 
   function resetCustom() {
     customFixture = { name: CUSTOM_NAME, template: '', data: {}, variables: {} };
+    if (currentFixture && currentFixture.name === CUSTOM_NAME) {
+      currentFixture = customFixture; // keep live reference in sync
+    }
     customStored = false;
-    try { localStorage.removeItem(CUSTOM_KEY); } catch {}
+    try {
+      localStorage.removeItem(CUSTOM_KEY);
+      localStorage.removeItem(`pdl:baseline:${CUSTOM_NAME}`);
+    } catch {}
+
     suppressCustomPersist = true;
     setEditorValue('');
     if (modalModels.data) modalModels.data.setValue('{}');
