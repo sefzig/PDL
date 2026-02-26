@@ -3,7 +3,7 @@
  * Build browser-friendly fixtures manifests for the playground.
  *
  * Outputs:
- * - playground/fixtures.json        (tracked fixtures only)
+ * - playground/fixtures.json        (gitignore-filtered fixtures: tracked or untracked)
  * - playground/fixtures-local.json  (all local fixtures, including gitignored)
  */
 
@@ -17,7 +17,8 @@ const outPath = path.join(repoRoot, 'playground/fixtures.json');
 const outLocalPath = path.join(repoRoot, 'playground/fixtures-local.json');
 
 function listTrackedPrefixes() {
-  const output = execSync('git ls-files tests/fixtures', {
+  // Include tracked and untracked files, but still respect .gitignore
+  const output = execSync('git ls-files --cached --others --exclude-standard tests/fixtures', {
     cwd: repoRoot,
     encoding: 'utf8',
   });

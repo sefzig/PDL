@@ -44,7 +44,11 @@ test:
 elif [ "$$target" = "py" ]; then \
 	if [ -n "$$key" ]; then python3 tests/py/run.py $$key; else python3 tests/py/run.py; fi; \
 else \
-	if [ -n "$$key" ]; then node tests/both/test.js $$key; else node tests/both/test.js; fi; \
+	if [ $$update -eq 1 ]; then \
+		if [ -n "$$key" ]; then node tests/both/test.js update $$key; else node tests/both/test.js update; fi; \
+	else \
+		if [ -n "$$key" ]; then node tests/both/test.js $$key; else node tests/both/test.js; fi; \
+	fi; \
 fi
 
 # Swallow extra goals (like fixture keys / update) so make doesn't error.

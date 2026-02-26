@@ -4,4 +4,6 @@ dist/*
 tests/fixtures/03_*
 tests/fixtures/04_*
 tests/fixtures/05_*
+tests/fixtures/06_*
+tests/fixtures/07_*
 playground/fixtures-local.json

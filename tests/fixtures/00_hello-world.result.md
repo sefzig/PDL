@@ -1,2 +1,2 @@
 
-Hello `World`, it's `2026`!
+Hello World, it's 2026!

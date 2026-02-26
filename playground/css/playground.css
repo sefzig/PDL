@@ -21,7 +21,6 @@
 .pg-panel-body { flex: 1 1 auto; min-height: 0; }
 #editor { height: calc(100vh - 48px - 40px); }
 #rendered { height: calc(100vh - 48px - 40px); overflow: auto; padding: 0px 24px 24px 24px; box-sizing: border-box; }
-#rendered code { background: var(--color-accent, #00a2a7); color: #000; border-radius: 3px; padding: 0.15em 0.35em; }
 html:not([data-theme=\"dark\"]) #rendered code { color: #fff; }
 .pg-toolbar { display: flex; gap: 8px; align-items: center; }
 .pg-status { font-size: 12px; color: var(--color-text-muted); }
@@ -44,10 +43,31 @@ h1, h2 {
    padding-left: 2px;
 }
 #rendered p > code,
+#rendered em > code,
 #rendered li > code {
+   background: var(--color-accent, #00a2a7); 
+   color: #000; 
+   border-radius: 3px;
    padding: 1px 3px 1px 3px;
    margin: 0px -2px 0px -2px;
    font-family: inherit;
+}
+
+#rendered pre > code {
+   display: block;
+   background: var(--color-border-subtle); 
+   color: #000; 
+   border-radius: 3px;
+   padding: 4px;
+   margin: 0px -2px 0px -2px;
+   font-family: inherit;
+}
+
+#rendered blockquote {
+   background: var(--color-bg-subtle);
+   border-left: 4px solid var(--color-border-subtle);
+   padding: 0px 0px 0px 12px;
+   margin: 0;
 }
 
 header .pg-title {

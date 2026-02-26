@@ -16,6 +16,7 @@ const { render: renderJs } = require('../../packages/js/src/pdl');
 const colors = {
   green: (s) => `\x1b[32m${s}\x1b[0m`,
   red: (s) => `\x1b[31m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
 };
 
@@ -37,9 +38,9 @@ function loadFixture(base) {
 
   const template = fs.readFileSync(tplPath, 'utf8');
   const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-  const expected = fs.readFileSync(outPath, 'utf8');
+  const expected = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : null;
   const variables = fs.existsSync(varsPath) ? JSON.parse(fs.readFileSync(varsPath, 'utf8')) : {};
-  return { base, template, data, expected, variables };
+  return { base, template, data, expected, variables, outPath };
 }
 
 function normalizeNewline(s) {
@@ -72,13 +73,36 @@ function renderPy(base) {
   return { ok: true, markdown: res.stdout }; // stdout already has trailing newline
 }
 
-function runFixture(fixture) {
-  const { base, template, data, expected, variables } = fixture;
-
-  const expNorm = normalizeNewline(expected);
+function runFixture(fixture, { update } = {}) {
+  const { base, template, data, expected, variables, outPath } = fixture;
 
   const jsOut = renderJs(template, data, { variables }).markdown;
   const jsNorm = normalizeNewline(jsOut);
+
+  if (update) {
+    fs.writeFileSync(outPath, jsNorm, 'utf8');
+    console.log(`${colors.yellow('↻')} updated ${path.relative(process.cwd(), outPath)}`);
+
+    // still run py to catch drift, but don't block update
+    const pyRes = renderPy(base);
+    if (pyRes.ok) {
+      const pyNorm = normalizeNewline(pyRes.markdown || '');
+      if (pyNorm !== jsNorm) {
+        console.log(`${colors.red('!')} python output differs; expected updated from js output`);
+      }
+    } else {
+      console.log(`${colors.red('!')} python render failed during update: ${pyRes.error.trim()}`);
+    }
+    return { jsOk: true, pyOk: true, updated: true };
+  }
+
+  if (expected == null) {
+    console.error(`${colors.red('✗')} ${base} [missing expected output]`);
+    return { jsOk: false, pyOk: false, pyError: null };
+  }
+
+  const expNorm = normalizeNewline(expected);
+
   const jsOk = jsNorm === expNorm;
 
   const pyRes = renderPy(base);
@@ -100,7 +124,10 @@ function runFixture(fixture) {
 }
 
 function main() {
-  const key = process.argv[2] || null;
+  const args = process.argv.slice(2);
+  const wantsUpdate = args.includes('update');
+  const key = args.find((a) => a !== 'update') || null;
+
   const all = listFixtures();
   const selected = key ? all.filter((b) => b.startsWith(key)) : all;
   if (!selected.length) {
@@ -112,10 +139,13 @@ function main() {
   let pyPass = 0;
   for (const base of selected) {
     const fixture = loadFixture(base);
-    const res = runFixture(fixture);
+    const res = runFixture(fixture, { update: wantsUpdate });
+    if (wantsUpdate) continue;
     if (res.jsOk) jsPass++;
     if (res.pyOk) pyPass++;
   }
+
+  if (wantsUpdate) return;
 
   const total = selected.length;
   const jsSummary = jsPass === total ? colors.green('✔ pass') : colors.red('✖ fail');

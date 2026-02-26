@@ -140,7 +140,7 @@ In the playground, you can test all PDL fixtures and work on your Custom one.
 Run `make build playground` to produce a browser bundle and a fixtures manifest. 
 
 The build now emits two manifests:
-- `playground/fixtures.json` — tracked fixtures (gitignore-filtered)
+- `playground/fixtures.json` — gitignore-filtered fixtures (tracked or untracked, but not ignored)
 - `playground/fixtures-local.json` — all local fixtures, including gitignored ones (ignored by git)
 
 ## Use
@@ -153,3 +153,5 @@ Use the Export function to produce fixture files for other systems.
 # Niceties
 
 - **VSC**: Do you use Visual Studio Code? A ready-to-package syntax extension lives in `vsc/` to highlight PDL inline in Markdown, inside ```pdl``` fences, and in `.pdl` files. Build a `.vsix` with `npm install && npx vsce package`, then install it via “Extensions → ... → Install from VSIX…”.
+
+- **License**: MIT License

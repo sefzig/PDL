@@ -500,7 +500,8 @@
         ],
         varcontent: [
           [/\}/, { token: 'variable.brace', next: '@pop' }],
-          [/[^}]+/, 'variable.inner'],
+          [/([A-Za-z0-9._:-]+)/, 'variable.inner'],
+          [/[^}]+/, 'text'],
         ],
         dq: [
           [/(<=|>=|!=|\^=|\$=|\*=|=|<|>|&|\|)/, 'directive.op'],

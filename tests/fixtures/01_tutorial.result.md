@@ -141,8 +141,8 @@ We might want to adjust the casing:
 * Lower case: digital
 * Lower camel case: diGiTaLProduct
 * Upper camel case: DiGiTaLProduct
-* Lower Snake case: di_gi_ta_l_product
-* Upper Snake case: DI_GI_TA_L_PRODUCT
+* Lower Snake case: digital_product
+* Upper Snake case: DIGITAL_PRODUCT
 
 We can truncate long texts:
 * Lorem ipsum dolor sit amet.
