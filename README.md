@@ -153,5 +153,3 @@ Use the Export function to produce fixture files for other systems.
 # Niceties
 
 - **VSC**: Do you use Visual Studio Code? A ready-to-package syntax extension lives in `vsc/` to highlight PDL inline in Markdown, inside ```pdl``` fences, and in `.pdl` files. Build a `.vsix` with `npm install && npx vsce package`, then install it via “Extensions → ... → Install from VSIX…”.
-
-- **License**: MIT License
