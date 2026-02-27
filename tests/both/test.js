@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Cross-language fixture runner: JS + PY.
- * Shows one line per fixture (green check only when both pass; otherwise per-lang status).
+ * Shows one line per fixture (green check only when all pass; otherwise per-lang status).
  * Usage:
  *   node tests/both/test.js         # all fixtures
  *   node tests/both/test.js 01      # fixtures starting with 01

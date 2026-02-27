@@ -1,0 +1,12 @@
+{
+  "name": "pdl/pdl",
+  "description": "Prompt Data Language PHP implementation (parity with JS/Py)",
+  "license": "MIT",
+  "type": "library",
+  "require": {
+    "php": ">=8.0"
+  },
+  "autoload": {
+    "files": ["src/pdl.php"]
+  }
+}

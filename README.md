@@ -57,7 +57,7 @@ The library can be tested in terminal (and the playground).
 
 ## Fixtures
 
-Tests in `tests/fixtures` run against both language implementations.
+Tests in `tests/fixtures` run against all language implementations.
 
 Fixtures follow this naming convention (all parts share the same `XX_name` prefix):
 - `XX_name.data.json` – the data payload

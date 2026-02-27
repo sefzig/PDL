@@ -44,7 +44,13 @@ h1, h2 {
 }
 #rendered p > code,
 #rendered em > code,
-#rendered li > code {
+#rendered li > code,
+#rendered h1 > code,
+#rendered h2 > code,
+#rendered h3 > code,
+#rendered h4 > code,
+#rendered h5 > code,
+#rendered h6 > code {
    background: var(--color-accent, #00a2a7); 
    color: #000; 
    border-radius: 3px;

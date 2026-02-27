@@ -4,7 +4,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <js|py> [fixture_key]" >&2
+  echo "Usage: $0 <js|py|php> [fixture_key]" >&2
   exit 1
 fi
 
@@ -20,8 +20,15 @@ case "$LANG" in
   py)
     python3 "$ROOT/tests/py/run_render.py" ${KEY:+$KEY}
     ;;
+  php)
+    if command -v php >/dev/null 2>&1; then
+      php "$ROOT/tests/php/run_render.php" ${KEY:+$KEY}
+    else
+      echo "php binary not found; skipping" >&2
+    fi
+    ;;
   *)
-    echo "Unknown target: $LANG (use js|py)" >&2
+    echo "Unknown target: $LANG (use js|py|php)" >&2
     exit 1
     ;;
 esac

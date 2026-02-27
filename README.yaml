@@ -1,5 +1,5 @@
-# Machine-readable PDL spec (source of truth for both JS & Py)
-# Sections: globals, directives (by name), helpers. Values are normative; prose belongs in README.md.
+# Machine-readable PDL spec
+# Sections: globals, directives (by name), helpers. Values are normative; prose is in README.md.
 globals:
   encoding: utf-8
   max_depth: 40
