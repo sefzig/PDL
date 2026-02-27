@@ -3,9 +3,7 @@
 namespace PDL;
 
 /**
- * Prompt Data Language renderer (PHP 8+ standalone).
- *
- * TODO: Implement full standalone engine; current version is a placeholder after accidental deletion.
+ * PHP implementation pending. Stub keeps interface stable without execution.
  */
 function render(string $template, $data = [], array $options = []): array
 {
