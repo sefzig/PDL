@@ -18,7 +18,7 @@ function render(string $template, $data = [], array $options = []): array
     $headerIndentation = $options['headerIndentation'] ?? '#';
 
     $dataRoot = normalize_root($data);
-    $template = apply_string_variables($template, $vars);
+    $template = apply_string_variables($template, $vars, $hlBefore, $hlAfter);
     $template = strip_comments($template);
 
     $parser = new Parser($template, $dataRoot, $vars, ['before' => $hlBefore, 'after' => $hlAfter]);
@@ -40,26 +40,67 @@ function render(string $template, $data = [], array $options = []): array
 // Helpers: variable replacement and comments
 // --------------------------------------------------------------------------
 
-function apply_string_variables(string $tpl, array $vars): string
+function apply_string_variables(string $tpl, array $vars, string $before = '', string $after = ''): string
 {
-    return preg_replace_callback('/\{([A-Za-z0-9_]+)\}/', function ($m) use ($vars) {
-        $k = $m[1];
-        if (!array_key_exists($k, $vars)) return $m[0];
-        $v = $vars[$k];
-        if ($v === true) return 'true';
-        if ($v === false) return 'false';
-        return (string)$v;
-    }, $tpl);
+    // Parity with JS: scan character-by-character, avoid replacements inside directives ([...]),
+    // and allow any name until the matching }.
+    $len = strlen($tpl);
+    $out = '';
+    $depth = 0; // bracket depth for directives
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $tpl[$i];
+        if ($ch === '[') {
+            $depth++;
+            $out .= $ch;
+            continue;
+        }
+        if ($ch === ']' && $depth > 0) {
+            $depth--;
+            $out .= $ch;
+            continue;
+        }
+        if ($ch === '{') {
+            $close = strpos($tpl, '}', $i + 1);
+            if ($close !== false) {
+                $name = substr($tpl, $i + 1, $close - $i - 1);
+                if (array_key_exists($name, $vars)) {
+                    $val = $vars[$name];
+                    if ($val === true) $val = 'true';
+                    if ($val === false) $val = 'false';
+                    $valStr = (string)$val;
+                    if ($depth === 0 && ($before !== '' || $after !== '')) {
+                        $valStr = $before . $valStr . $after;
+                    }
+                    $out .= $valStr;
+                    $i = $close;
+                    continue;
+                }
+            }
+        }
+        $out .= $ch;
+    }
+    return $out;
 }
 
 function strip_comments(string $tpl): string
 {
     $lines = preg_split('/\R/', $tpl);
     $out = [];
+    $inFence = false;
+    $fenceRe = '/^(```|~~~)/';
     foreach ($lines as $line) {
+        if (preg_match($fenceRe, $line)) {
+            $inFence = !$inFence;
+            $out[] = rtrim($line, "\r\n");
+            continue;
+        }
+        if ($inFence) {
+            $out[] = rtrim($line, "\r\n");
+            continue;
+        }
         $trim = ltrim($line);
-        if (strpos($trim, '//') === 0) {
-            continue; // whole-line comment
+        if (str_starts_with($trim, '//')) {
+            continue; // whole-line comment outside fences
         }
         $pos = strpos($line, ' //');
         if ($pos !== false) {
@@ -174,11 +215,16 @@ class Parser
             $type = $node['type'];
             switch ($type) {
                 case 'text':
-                    $text = $this->applyLoopIndex($node['text']);
-                    if ($skipNextBlank && str_starts_with($text, "\n")) {
-                        $text = ltrim($text, "\n");
-                        $skipNextBlank = false;
+                    $text = $this->applyInlineIf($node['text']);
+                    $text = $this->applyLoopIndex($text);
+                    if ($skipNextBlank && trim($text) === '') {
+                        // consume pure-blank text after an empty block, keep flag for next chunk
+                        continue 2;
                     }
+                    if ($skipNextBlank && str_starts_with($text, "\n") && str_ends_with($out, "\n")) {
+                        $text = substr($text, 1); // drop one leading newline when previous output ended a line
+                    }
+                    $skipNextBlank = false;
                     if ($skipNextBlank && trim($text) === '') {
                         $skipNextBlank = false;
                         break;
@@ -196,7 +242,7 @@ class Parser
                     break;
                 case 'set':
                     $this->evalSet($node['raw']);
-                    $skipNextBlank = false;
+                    $skipNextBlank = true;
                     break;
                 case 'loop':
                     $rendered = $this->evalLoop($node['raw'], $node['body']);
@@ -225,6 +271,74 @@ class Parser
             }
         }
         return $out;
+    }
+
+    private function applyInlineIf(string $line): string
+    {
+        $s = $line;
+        while (true) {
+            $start = strpos($s, '[if:');
+            if ($start === false) break;
+            $end = strpos($s, '[if-end]', $start);
+            if ($end === false) break;
+
+            $condStart = $start + 4; // len('[if:')
+            $condClose = strpos($s, ']', $condStart);
+            if ($condClose === false || $condClose > $end) break;
+            $condIf = trim(substr($s, $condClose - ($condClose - $condStart), $condClose - $condStart));
+
+            $cursor = $condClose + 1;
+            $parts = [];
+
+            $readUntilNextTag = function ($str, $cpos, $endPos) {
+                $nextElif = strpos($str, '[if-elif:', $cpos);
+                $nextElse = strpos($str, '[if-else]', $cpos);
+                $candidates = array_filter([$nextElif, $nextElse, $endPos], fn($x) => $x !== false && $x <= $endPos);
+                $stop = $endPos;
+                if (!empty($candidates)) {
+                    $stop = min($candidates);
+                }
+                return [substr($str, $cpos, $stop - $cpos), $stop];
+            };
+
+            [$textIf, $cursor] = $readUntilNextTag($s, $cursor, $end);
+            $parts[] = ['cond' => $condIf, 'text' => $textIf];
+
+            while ($cursor < $end) {
+                if (str_starts_with(substr($s, $cursor), '[if-elif:')) {
+                    $cursor += 8; // len('[if-elif:')
+                    $rb = strpos($s, ']', $cursor);
+                    if ($rb === false || $rb > $end) break;
+                    $condElif = trim(substr($s, $cursor, $rb - $cursor));
+                    $cursor = $rb + 1;
+                    [$txt, $cursor] = $readUntilNextTag($s, $cursor, $end);
+                    $parts[] = ['cond' => $condElif, 'text' => $txt];
+                    continue;
+                }
+                if (str_starts_with(substr($s, $cursor), '[if-else]')) {
+                    $cursor += 8; // len('[if-else]')
+                    [$txt, $cursor] = $readUntilNextTag($s, $cursor, $end);
+                    $parts[] = ['cond' => null, 'text' => $txt];
+                    break;
+                }
+                break;
+            }
+
+            $replacement = '';
+            foreach ($parts as $p) {
+                if ($p['cond'] === null) {
+                    $replacement = $p['text'];
+                    break;
+                }
+                if ($this->evalCondition('[if:' . $p['cond'] . ']')) {
+                    $replacement = $p['text'];
+                    break;
+                }
+            }
+
+            $s = substr($s, 0, $start) . $replacement . substr($s, $end + 8); // 8 = len('[if-end]')
+        }
+        return $s;
     }
 
     private function expandInline(string $s): string
@@ -793,61 +907,94 @@ function resolve_path($path, $root, array $vars, bool $ci = false, bool $keepLis
         return $path;
     }
     $path = trim($path);
+    if ($path === '') return null;
 
-    // direct variable braces already applied before
-
-    $segments = explode('.', $path);
-    $current = $root;
-    if (isset($vars[$segments[0]])) {
-        $current = $vars[$segments[0]];
-        array_shift($segments);
-    } elseif (preg_match('/^([A-Za-z0-9_]+)\\[(.+)\\]$/', $path, $m) && isset($vars[$m[1]])) {
-        $current = $vars[$m[1]];
-        $segments = [$m[2]];
-    }
-    foreach ($segments as $seg) {
-        if ($seg === '') {
-            continue;
+    // helper: parse into segments with optional selector [..]
+    $segments = [];
+    $i = 0;
+    $len = strlen($path);
+    while ($i < $len) {
+        if ($path[$i] === '.') { $i++; continue; }
+        $name = '';
+        if ($path[$i] === '"') {
+            $i++;
+            while ($i < $len && $path[$i] !== '"') { $name .= $path[$i]; $i++; }
+            if ($i < $len && $path[$i] === '"') $i++;
+        } else {
+            while ($i < $len && $path[$i] !== '.' && $path[$i] !== '[') { $name .= $path[$i]; $i++; }
         }
-        if (preg_match('/(.+)\\[(.+)\\]/', $seg, $m)) {
-            $key = $m[1];
-            $cond = $m[2];
-            // allow trailing "ci=true/false" inside the selector, mirroring JS/Py
-            $condCi = $ci;
-            if (preg_match('/\\sci=(true|false)$/i', $cond, $cm)) {
-                $condCi = strtolower($cm[1]) === 'true';
-                $cond = trim(substr($cond, 0, strlen($cond) - strlen($cm[0])));
-            }
-            $current = is_array($current) && array_key_exists($key, $current) ? $current[$key] : null;
-            if (!is_array($current)) {
+        $selector = null;
+        if ($i < $len && $path[$i] === '[') {
+            $i++; $sel = '';
+            while ($i < $len && $path[$i] !== ']') { $sel .= $path[$i]; $i++; }
+            if ($i < $len && $path[$i] === ']') $i++;
+            $selector = $sel;
+        }
+        $segments[] = ['name' => trim($name), 'sel' => $selector];
+        if ($i < $len && $path[$i] === '.') $i++;
+    }
+
+    $applySelector = function ($base, string $sel, bool $ciFlag) use ($keepList) {
+        $cond = $sel;
+        $condCi = $ciFlag;
+        if (preg_match('/\\sci=(true|false)$/i', $cond, $cm)) {
+            $condCi = strtolower($cm[1]) === 'true';
+            $cond = trim(substr($cond, 0, strlen($cond) - strlen($cm[0])));
+        }
+        $key = strip_outer_quotes(trim($cond));
+
+        // direct key access when base is associative and no operators
+        if (is_array($base) && !array_is_list($base) && !preg_match('/[<>=\\^\\$\\*\\|&]/', $cond) && array_key_exists($key, $base)) {
+            return $base[$key];
+        }
+
+        // numeric index on list
+        if (is_array($base) && array_is_list($base) && preg_match('/^-?\\d+$/', $key)) {
+            $idx = intval($key);
+            if (!array_key_exists($idx, $base)) return null;
+            return $keepList ? [$base[$idx]] : $base[$idx];
+        }
+
+        // filter expression on list
+        if (!is_array($base)) {
+            return null;
+        }
+        $filtered = filter_list($base, $cond, $condCi);
+        if ($keepList) return $filtered;
+        $vals = array_values($filtered);
+        return $vals[0] ?? null;
+    };
+
+    $current = null;
+    foreach ($segments as $idx => $seg) {
+        $name = $seg['name'];
+        $sel = $seg['sel'];
+
+        if ($idx === 0) {
+            if ($name === 'data') {
+                $current = $root;
+            } elseif (array_key_exists($name, $vars)) {
+                $current = $vars[$name];
+            } elseif (is_array($root) && array_key_exists($name, $root)) {
+                $current = $root[$name];
+            } else {
                 return null;
             }
-            // bracket used as direct key access when not a filter expression
-            $directKey = strip_outer_quotes($cond);
-            if (!preg_match('/[<>=\\^\\$\\*\\|&]/', $cond) && array_key_exists($directKey, $current)) {
-                $current = $current[$directKey];
-            } else {
-                $current = filter_list($current, $cond, $condCi);
-                if (!$keepList && is_array($current)) {
-                    $vals = array_values($current);
-                    $current = $vals[0] ?? null;
+        } else {
+            if (!is_array($current)) return null;
+            if ($name !== '') {
+                if (array_key_exists($name, $current)) {
+                    $current = $current[$name];
+                } elseif (array_is_list($current) && isset($current[0]) && is_array($current[0]) && array_key_exists($name, $current[0])) {
+                    $current = $current[0][$name];
+                } else {
+                    return null;
                 }
             }
-            continue;
         }
-        // array index numeric
-        if ($seg === 'data') {
-            // alias to root
-            $seg = '';
-        }
-        if ($seg !== '') {
-            if (is_array($current) && array_key_exists($seg, $current)) {
-                $current = $current[$seg];
-            } elseif (is_array($current) && array_is_list($current) && isset($current[0]) && is_array($current[0]) && array_key_exists($seg, $current[0])) {
-                $current = $current[0][$seg];
-            } else {
-                return null;
-            }
+
+        if ($sel !== null) {
+            $current = $applySelector($current, $sel, $ci);
         }
     }
     return $current;
@@ -1405,8 +1552,22 @@ function coalesce_loop_blocks(array $blocks): array
 
 function apply_highlight_heuristics(string $text, string $before, string $after): string
 {
-    // Minimal implementation: no heuristics needed for fixtures
-    return $text;
+    if ($before === '' && $after === '') {
+        return $text;
+    }
+    $bEsc = preg_quote($before, '/');
+    $aEsc = preg_quote($after, '/');
+    $out = $text;
+
+    // Wrap markdown links/images: [text](url) or ![alt](url)
+    $linkRe = '/(\\!?\\[[^\\]]*\\]\\()\\s*' . $bEsc . '(.*?)' . $aEsc . '\\s*(\\))/s';
+    $out = preg_replace($linkRe, $before . '$1$2$3' . $after, $out);
+
+    // Wrap HTML-like attributes containing highlighted value
+    $attrRe = '/([A-Za-z_:][-A-Za-z0-9_:.]*\\s*=\\s*\"?)' . $bEsc . '(.*?)' . $aEsc . '(\"?)/s';
+    $out = preg_replace($attrRe, $before . '$1$2$3' . $after, $out);
+
+    return $out;
 }
 
 function drop_first_header_line(string $text): string
