@@ -896,13 +896,14 @@ class PathResolver {
 
   _parseValueToken(tok) {
     const t = String(tok || '').trim();
+    const lower = t.toLowerCase();
     if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
       return t.slice(1, -1).replace(/\\"/g, '"').replace(/\\'/g, "'");
     }
     const n = coerceNumber(t);
     if (n != null) return n;
-    if (t === 'true') return true;
-    if (t === 'false') return false;
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
     if (t === 'null') return null;
     return t;
   }
@@ -1991,6 +1992,7 @@ class Engine {
     let i = 0;
     const n = lines.length;
     let previousWasBlank = false;
+    let skipNextBlankAfterEmptyBlock = false;
 
     while (i < n) {
       if (this._checkLimits(depth)) { emitted.push(...lines.slice(i)); break; }
@@ -2008,7 +2010,14 @@ class Engine {
           emitted.push(...blk);
           i = newI;
           usedBlock = true;
-          previousWasBlank = (blk.length === 0) || blk.every(x => x.trim() === '');
+          const blkHasContent = blk.some(x => x.trim() !== '');
+          if (blkHasContent) {
+            previousWasBlank = blk[blk.length - 1].trim() === '';
+            skipNextBlankAfterEmptyBlock = false;
+          } else {
+            // block produced no visible text; avoid adding blank lines because of it
+            skipNextBlankAfterEmptyBlock = true;
+          }
           if (this.stats.halted) { emitted.push(...lines.slice(i)); break; }
           break;
         }
@@ -2031,23 +2040,27 @@ class Engine {
       const onlySet =
         onlySpaces &&
         originalLine.includes('[set:') &&
-        !originalLine.includes('[get:') &&
-        !originalLine.includes('[value:') &&
         !originalLine.includes('[loop:') &&
         !originalLine.includes('[if:');
 
       if (onlySet) {
-        if (!previousWasBlank && emitted.length && emitted[emitted.length - 1].trim() !== '') emitted.push('');
+        // Suppress whitespace-only set lines entirely (no blank-line emission)
         i++;
-        previousWasBlank = true;
         continue;
       }
 
-      if (line.trim() === '') {
+      const isBlank = line.trim() === '';
+      if (isBlank) {
+        if (skipNextBlankAfterEmptyBlock) {
+          skipNextBlankAfterEmptyBlock = false;
+          i++;
+          continue;
+        }
         if (!previousWasBlank) { emitted.push(''); previousWasBlank = true; }
       } else {
         emitted.push(line);
         previousWasBlank = false;
+        skipNextBlankAfterEmptyBlock = false;
       }
 
       i++;
@@ -2247,6 +2260,25 @@ function render(template, data, options = {}) {
     highlight,
   });
   let [expandedText, stats] = parser.render();
+
+  // Collapse runs of blank lines (handles empty conditional blocks leaving gaps)
+  const collapseBlankRuns = (text) => {
+    const out = [];
+    let prevBlank = false;
+    for (const line of String(text).split('\n')) {
+      const isBlank = line.trim() === '';
+      if (isBlank) {
+        if (prevBlank) continue;
+        prevBlank = true;
+        out.push('');
+      } else {
+        prevBlank = false;
+        out.push(line);
+      }
+    }
+    return out.join('\n');
+  };
+  expandedText = collapseBlankRuns(expandedText);
 
   expandedText = applyHighlightHeuristics(expandedText, highlight);
   expandedText = PostFormat.dropFirstHeaderLine(expandedText, Boolean(dropFirstHeader));

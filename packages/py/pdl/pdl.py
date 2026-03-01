@@ -942,9 +942,10 @@ class PathResolver:
         n = coerce_number(t)
         if n is not None:
             return n
-        if t == "true":
+        lower = t.lower()
+        if lower == "true":
             return True
-        if t == "false":
+        if lower == "false":
             return False
         if t == "null":
             return None
@@ -2070,6 +2071,8 @@ class Engine:
         i = 0
         n = len(lines)
         previous_was_blank = False
+        skip_next_blank_after_empty_block = False
+        previous_block_emitted_content = False
         while i < n:
             if self._check_limits(depth):
                 emitted.extend(lines[i:])
@@ -2088,7 +2091,12 @@ class Engine:
                     emitted.extend(blk)
                     i = new_i
                     used_block = True
-                    previous_was_blank = (not blk) or all(x.strip() == "" for x in blk)
+                    blk_has_content = any(x.strip() != "" for x in blk)
+                    if blk_has_content:
+                        previous_was_blank = blk[-1].strip() == ""
+                        skip_next_blank_after_empty_block = False
+                    else:
+                        skip_next_blank_after_empty_block = True
                     if self.stats.halted:
                         emitted.extend(lines[i:])
                     break
@@ -2109,26 +2117,28 @@ class Engine:
             only_set = (
                 only_spaces
                 and "[set:" in original_line
-                and "[get:" not in original_line
-                and "[value:" not in original_line
                 and "[loop:" not in original_line
                 and "[if:" not in original_line
             )
 
             if only_set:
-                if not previous_was_blank and emitted and emitted[-1].strip() != "":
-                    emitted.append("")
+                # Suppress whitespace-only set lines entirely (no blank-line emission)
                 i += 1
-                previous_was_blank = True
                 continue
 
-            if line.strip() == "":
+            is_blank = line.strip() == ""
+            if is_blank:
+                if skip_next_blank_after_empty_block:
+                    skip_next_blank_after_empty_block = False
+                    i += 1
+                    continue
                 if not previous_was_blank:
                     emitted.append("")
                     previous_was_blank = True
             else:
                 emitted.append(line)
                 previous_was_blank = False
+                skip_next_blank_after_empty_block = False
 
             i += 1
 
@@ -2303,6 +2313,23 @@ def render(template: str, data: Dict[str, Any], options: Optional[Dict[str, Any]
 
     parser = PDLParser(templ_with_vars, json_root, aliases={"data": json_root}, variables=variables, highlight=highlight)
     expanded_text, stats = parser.render()
+
+    def collapse_blank_runs(text: str) -> str:
+        out: List[str] = []
+        prev_blank = False
+        for line in str(text).split("\n"):
+            is_blank = line.strip() == ""
+            if is_blank:
+                if prev_blank:
+                    continue
+                prev_blank = True
+                out.append("")
+            else:
+                prev_blank = False
+                out.append(line)
+        return "\n".join(out)
+
+    expanded_text = collapse_blank_runs(expanded_text)
 
     expanded_text = apply_highlight_heuristics(expanded_text, highlight)
     expanded_text = PostFormat.drop_first_header_line(expanded_text, drop_first_header)

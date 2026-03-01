@@ -225,7 +225,6 @@ _Conditions allow the briefing to adapt to the data._
 _Select a statement depending on the facts._
 
 Price assessment for {Product}:
-
 [if:products[name={Product}].price>20]
 - The {Product} is positioned as a premium product.
 [if-elif:products[name={Product}].price>10]

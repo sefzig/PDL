@@ -195,7 +195,6 @@ _Conditions allow the briefing to adapt to the data._
 _Select a statement depending on the facts._
 
 Price assessment for Screen:
-
 - The Screen is positioned as a premium product.
 
 ### Inline decisions
@@ -356,11 +355,8 @@ But only if configured as non-humble:
 _A scoped variable exists only within its block._
 
 Here are scoped variables in a loop:
-
 - Reviewing Demo in detail.
-
 - Reviewing Widget in detail.
-
 - Reviewing Screen in detail.
 
 Outside the loop, the scoped variable is no longer available.

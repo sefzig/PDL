@@ -42,7 +42,8 @@ h1, h2 {
    line-height: 125%;
    padding-left: 2px;
 }
-#rendered p > code,
+#rendered p  > code,
+#rendered td > code,
 #rendered em > code,
 #rendered li > code,
 #rendered h1 > code,

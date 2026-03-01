@@ -39,17 +39,19 @@ The main elements are `[directives:...]`, which describe the logic that will cre
 * `[if:...]`      Generate text depending on actual data and variables
 * `[set/get:...]` Write and read variables, mutate and scope them
 * `[condense]`    Compact complex logic to simple natural language
+  * Rendering note: whitespace-only lines that contain only `[set:...]` are omitted from the output (they no longer insert blank lines).
+  * Conditions treat boolean literals case-insensitively (e.g., `true`, `True`, `FALSE` are equivalent).
+  * Conditional/loop blocks that produce no content no longer leave extra blank lines; consecutive blank lines are collapsed.
 
-Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md), if you have gone through the tutorial already). Both are available in the interactive playground.
-
-## Highlight wrappers
-
-- Render options `hlBefore` / `hlAfter` (JS/Py) default to empty strings; wrapping activates when at least one marker is non-empty and both aren’t `false`.
-- `[value:...]` and `[get:...]` outputs are wrapped after transforms unless `hl=false` is set on the directive.
-- A light heuristic widens the wrap to the full Markdown link/image or HTML attribute when the directive is used as the URL/attribute value.
-- Defaults keep current output unchanged until configured.
+Take a look at all the available directives in the [tutorial](https://github.com/sefzig/PDL/blob/main/tests/fixtures/01_tutorial.template.md) (or the [cheatsheet](https://github.com/sefzig/PDL/blob/main/tests/fixtures/02_cheatsheet.template.md), if you have gone through the tutorial already). Both are available in the interactive [playground](https://github.com/sefzig/PDL/blob/main/playground/index.html).
 
 The normative, machine-readable contract for PDL lives in `README.yaml`.
+
+# Highlight
+
+To make value- and get-directive results visible in the resulting text, the configuration allows to wrap results with markers before and after. By default, the `hlBefore` / `hlAfter` options are empty. A light heuristic makes sure composed markdown elements like links or images are wrapped on their outside when containing a directive on their inside.
+
+Wrapping activates globally when at least one marker is non-empty and both aren’t `false`. Individual directives can be excluded by adding the option `hl=false`. 
 
 # Testing
 
@@ -65,25 +67,30 @@ Fixtures follow this naming convention (all parts share the same `XX_name` prefi
 - `XX_name.template.md` – the PDL template
 - `XX_name.variables.json` – integration-supplied variables
 
-## Smoke test
+## Run
 
-You can render a fixture right in your terminal:
+Smoke test rendering a fixture right in your terminal
 - Run all fixtures:                `make run`
 - Run fixtures with Javascript:    `make run js`
 - Run fixtures with Python:        `make run py`
-- Run a single fixture:            `make run 01`
+- Run fixtures with PHP:           `make run php`
+- Run a specific fixture:          `make run 01`
 
 If no language is chosen, the commands default to `js`.
+Flags for language and fixtures can be combined freely.
 
-## Golden output
+## Test
 
-Tests can be run accross the fixtures:
+Golden output tests can be run accross the fixtures:
 - Test all fixtures and languages: `make test`
 - Test all fixtures in Javascript: `make test js`
 - Test all fixtures with Python:   `make test py`
-- Test specific fixtures:          `make test 01`
+- Test all fixtures with PHP:      `make test php`
+- Test a specific fixture:         `make test 01`
+- Test specific fixtures:          `make test 01 03`
 - Test and update fixture results: `make test update`
 
+If no language is chosen, the commands default to `js`.
 Flags for language, fixtures, and updates can be combined freely.
 
 # Integrations
@@ -139,9 +146,9 @@ In the playground, you can test all PDL fixtures and work on your Custom one.
 
 Run `make build playground` to produce a browser bundle and a fixtures manifest. 
 
-The build now emits two manifests:
-- `playground/fixtures.json` — gitignore-filtered fixtures (tracked or untracked, but not ignored)
-- `playground/fixtures-local.json` — all local fixtures, including gitignored ones (ignored by git)
+The build emits two manifests:
+- `playground/fixtures.json` — gitignore-filtered fixtures
+- `playground/fixtures-local.json` — all local fixtures including gitignored ones
 
 ## Use
 
