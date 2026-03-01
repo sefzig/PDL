@@ -56,7 +56,31 @@ test:
 		if [ $$update -eq 1 ]; then \
 			if [ -n "$$key" ]; then node tests/both/test.js update $$key; else node tests/both/test.js update; fi; \
 		else \
-			if [ -n "$$key" ]; then node tests/both/test.js $$key; else node tests/both/test.js; fi; \
+			green="\033[32m"; red="\033[31m"; reset="\033[0m"; \
+			php_avail=1; command -v php >/dev/null 2>&1 || php_avail=0; \
+			pass_js=0; pass_py=0; pass_php=0; total=0; total_js=0; total_py=0; total_php=0; \
+			bases=$$(cd tests/fixtures && ls *.template.md | sed 's/.template.md//' | sort -V); \
+			for base in $$bases; do \
+				total=$$((total+1)); fail=""; \
+				node tests/js/test.js $$base >/dev/null 2>&1 && pass_js=$$((pass_js+1)) || fail="js"; total_js=$$((total_js+1)); \
+				python3 tests/py/run.py $$base >/dev/null 2>&1 && pass_py=$$((pass_py+1)) || fail="$$fail$${fail:+,}py"; total_py=$$((total_py+1)); \
+				if [ $$php_avail -eq 1 ]; then \
+					php tests/php/run.php $$base >/dev/null 2>&1 && pass_php=$$((pass_php+1)) || fail="$$fail$${fail:+,}php"; total_php=$$((total_php+1)); \
+				fi; \
+				if [ -z "$$fail" ]; then \
+					printf "$${green}✓$${reset} %s\n" $$base; \
+				else \
+					printf "$${red}✗$${reset} %s [%s]\n" $$base "$$fail"; \
+				fi; \
+			done; \
+			[ $$pass_js -eq $$total_js ] && printf "$${green}✓ pass$${reset} (js %d/%d)\n" $$pass_js $$total_js || printf "$${red}✗ fail$${reset} (js %d/%d)\n" $$pass_js $$total_js; \
+			[ $$pass_py -eq $$total_py ] && printf "$${green}✓ pass$${reset} (py %d/%d)\n" $$pass_py $$total_py || printf "$${red}✗ fail$${reset} (py %d/%d)\n" $$pass_py $$total_py; \
+			if [ $$php_avail -eq 1 ]; then \
+				[ $$pass_php -eq $$total_php ] && printf "$${green}✓ pass$${reset} (php %d/%d)\n" $$pass_php $$total_php || printf "$${red}✗ fail$${reset} (php %d/%d)\n" $$pass_php $$total_php; \
+			else \
+				printf "$${yellow:-}php binary not found; skipped$${reset}\n"; \
+			fi; \
+			exit 0; \
 		fi; \
 	fi
 

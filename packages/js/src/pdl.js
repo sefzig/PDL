@@ -1857,7 +1857,11 @@ class LoopBlockDirective {
     this._START = /^\s*\[loop:(.+)\]\s*$/;
     this._END = /^\s*\[loop-end\]\s*$/;
   }
-  match(line) { return this._START.test(line); }
+  match(line) {
+    // Skip lines that contain both start and end; those are handled by InlineLoopExpander.
+    if (String(line).includes(PDL.LOOP_END)) return false;
+    return this._START.test(line);
+  }
 
   expand(engine, lines, i, scope, depth) {
     const m = lines[i].match(this._START);

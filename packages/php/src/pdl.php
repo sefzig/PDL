@@ -136,7 +136,7 @@ class Scope
         }
     }
 
-    public function setVar(string $name, $value, bool $const = true, bool $humble = true)
+    public function setVar(string $name, $value, bool $const = true, bool $humble = false)
     {
         // Allow explicit null to always clear, regardless of const/humble flags
         if ($value === 'null' || $value === null) {
@@ -147,9 +147,6 @@ class Scope
             $meta = $this->varMeta[$name] ?? ['const' => true, 'humble' => true];
             $allow_flip = $meta['const'] && $const === false;
             if (!$allow_flip && $meta['const']) {
-                return;
-            }
-            if ($meta['humble'] && $humble && !$allow_flip) {
                 return;
             }
         }
@@ -471,7 +468,7 @@ class Parser
         $attrs = $args['attrs'];
         $name = $args['path'];
         $const = isset($attrs['const']) ? to_bool($attrs['const'], true) : true;
-        $humble = isset($attrs['humble']) ? to_bool($attrs['humble'], true) : true;
+        $humble = isset($attrs['humble']) ? to_bool($attrs['humble'], true) : false;
         $scopeLocal = isset($attrs['scope']) ? to_bool($attrs['scope'], false) : false;
         $valueRaw = $attrs[$name] ?? ($attrs['value'] ?? ($attrs[''] ?? null));
         $value = $this->resolve_value($valueRaw, true);
@@ -652,6 +649,14 @@ class Parser
         }
         // variables map first
         if (is_string($path) && array_key_exists($path, $this->scope->vars)) {
+            $meta = $this->scope->varMeta[$path] ?? ['const' => true, 'humble' => true];
+            if (!$meta['humble']) {
+                return $this->scope->vars[$path];
+            }
+            $rootVal = resolve_path($path, $this->scope->root, [], $ci, $keepList);
+            if ($rootVal !== null) {
+                return $rootVal;
+            }
             return $this->scope->vars[$path];
         }
         return resolve_path($path, $this->scope->root, $this->scope->vars, $ci, $keepList);

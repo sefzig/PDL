@@ -110,7 +110,11 @@ def coerce_number(x: Any) -> Optional[float]:
     if not NUMERIC_RE.match(s):
         return None
     n = float(s)
-    return n if math.isfinite(n) else None
+    if not math.isfinite(n):
+        return None
+    if n.is_integer():
+        return int(n)
+    return n
 
 
 def bump_exp(stats: "RenderStats", n: int = 1) -> bool:
@@ -1931,6 +1935,8 @@ class LoopBlockDirective:
         self._END = re.compile(r"^\s*\[loop-end\]\s*$")
 
     def match(self, line: str) -> bool:
+        if PDL.LOOP_END in str(line):
+            return False
         return bool(self._START.match(line))
 
     def expand(self, engine: "Engine", lines: List[str], i: int, scope: Scope, depth: int) -> Tuple[List[str], int]:
