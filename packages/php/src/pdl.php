@@ -49,16 +49,8 @@ function apply_string_variables(string $tpl, array $vars, string $before = '', s
     $depth = 0; // bracket depth for directives
     for ($i = 0; $i < $len; $i++) {
         $ch = $tpl[$i];
-        if ($ch === '[') {
-            $depth++;
-            $out .= $ch;
-            continue;
-        }
-        if ($ch === ']' && $depth > 0) {
-            $depth--;
-            $out .= $ch;
-            continue;
-        }
+        if ($ch === '[') { $depth++; $out .= $ch; continue; }
+        if ($ch === ']' && $depth > 0) { $depth--; $out .= $ch; continue; }
         if ($ch === '{') {
             $close = strpos($tpl, '}', $i + 1);
             if ($close !== false) {
@@ -202,7 +194,6 @@ class Parser
         $nodes = parse_tokens(tokenize_text($this->template));
         $text = $this->evalNodes($nodes);
         $text = collapse_blank_lines($text);
-        $text = preg_replace("/\\n{2}(## Missing Fields)/", "\n$1", $text);
         $text = rtrim($text) . "\n";
         return [$text, []];
     }
@@ -1453,12 +1444,10 @@ function collapse_blank_lines(string $text): string
         $line = $lines[$i];
         $isBlank = trim($line) === '' || trim($line) === '[[KEEP_LIST_BLANK]]';
         if ($isBlank) {
-            $nextLine = $lines[$i + 1] ?? null;
-            $prevLine = end($out);
+            $prevLine = ($i > 0) ? $lines[$i - 1] : '';
+            $nextLine = ($i + 1 < $count) ? $lines[$i + 1] : '';
             if ($nextLine === '## Missing Fields'
-                && $prevLine !== false
-                && preg_match('/^[-*+]\\s+/', ltrim($prevLine))) {
-                $prevBlank = false;
+                && preg_match('/^\\s*[-*+]\\s+/', ltrim($prevLine))) {
                 continue;
             }
             if ($prevBlank) {
