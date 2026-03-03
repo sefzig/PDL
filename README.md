@@ -11,7 +11,7 @@ Adapters for n8n and Langflow allow for quick integration into your automations.
 
 > Use the [Playground](https://github.com/sefzig/PDL/blob/main/playground/index.html) to work with PDL and preview the results live.
 
-Repository structure:
+## Repository structure
 
 ```
 adapters/    # Automation integrations
@@ -47,12 +47,6 @@ Take a look at all the available directives in the [tutorial](https://github.com
 
 The normative, machine-readable contract for PDL lives in `README.yaml`.
 
-# Highlight
-
-To make value- and get-directive results visible in the resulting text, the configuration allows to wrap results with markers before and after. By default, the `hlBefore` / `hlAfter` options are empty. A light heuristic makes sure composed markdown elements like links or images are wrapped on their outside when containing a directive on their inside.
-
-Wrapping activates globally when at least one marker is non-empty and both aren’t `false`. Individual directives can be excluded by adding the option `hl=false`. 
-
 # Testing
 
 The library can be tested in terminal (and the playground). 
@@ -61,15 +55,15 @@ The library can be tested in terminal (and the playground).
 
 Tests in `tests/fixtures` run against all language implementations.
 
-Fixtures follow this naming convention (all parts share the same `XX_name` prefix):
-- `XX_name.data.json` – the data payload
-- `XX_name.result.md` – expected rendered output
-- `XX_name.template.md` – the PDL template
-- `XX_name.variables.json` – integration-supplied variables
+Fixtures follow this naming convention (all parts share the same `XX_fixture-name` prefix):
+- `XX_fixture-name.data.json` – the data payload
+- `XX_fixture-name.result.md` – expected rendered output
+- `XX_fixture-name.template.md` – the PDL template
+- `XX_fixture-name.variables.json` – integration-supplied variables
 
 ## Run
 
-Smoke test rendering a fixture right in your terminal
+Smoke test rendering a fixture right in your terminal:
 - Run all fixtures:                `make run`
 - Run fixtures with Javascript:    `make run js`
 - Run fixtures with Python:        `make run py`
@@ -90,14 +84,16 @@ Golden output tests can be run accross the fixtures:
 - Test specific fixtures:          `make test 01 03`
 - Test and update fixture results: `make test update`
 
-If no language is chosen, the commands default to `js`.
 Flags for language, fixtures, and updates can be combined freely.
+If no language is chosen, the commands default to `js`.
 
 # Integrations
 
 The library can be included in other apps and systems. 
 
-## n8n
+## Javascript
+
+### n8n
 
 The library can be integrated in n8n as a code node. 
 The code of the node is built by the script in this repository.
@@ -113,7 +109,18 @@ Build and paste:
 1) `make build n8n` to regenerate `dist/n8n.js`
 2) Copy the contents of `dist/n8n.js` into an n8n JavaScript code node
 
-## Langflow
+### Browsers
+
+The library can run in the browser as part of any web app. 
+
+Build and add:
+1) Run `make build browser` to produce `dist/browser.js`.
+2) Add `dist/browser.js` to your app
+3) Load it via <script> tag.
+
+## Python
+
+### Langflow
 
 The repository ships a Langflow custom component that wraps the Python PDL engine (inlined for portability).
 
@@ -129,14 +136,13 @@ Build and add:
 1) `make build langflow` to regenerate `dist/langflow.py`.
 2) Import `dist/langflow.py` into Langflow (e.g., Components → Upload in the UI, or place the file in your Langflow `components/` directory and restart).
 
-## Browsers
+## PHP
 
-The library can run in the browser as part of any web app. 
+### Form
 
-Build and add:
-1) Run `make build browser` to produce `dist/browser.js`.
-2) Add `dist/browser.js` to your app
-3) Load it via <script> tag.
+A barebones PHP reference lives at `adapters/form/index.php`. It requires `packages/php/src/pdl.php`, reads `tests/fixtures/00_hello-world.template.md`, `.data.json`, and `.variables.json` for its defaults, submits to itself via GET, and shows rendered Markdown plus plain-text errors. Adjust the require path if you move the PHP engine.
+
+> VSC: To run the form, enter `php -S localhost:8000 -t adapters/form` in a VSC Terminal and follow instructions. Requires PHP CLI installed.
 
 # Playground 
 
@@ -158,6 +164,8 @@ In the app, the fixture (`Custom`) is persisted in your Local Storage until you 
 Use the Export function to produce fixture files for other systems.
 
 # Niceties
+
+- **Highlight**: To make value- and get-directive results visible in the resulting text, the configuration allows to wrap results with markers before and after. By default, the `hlBefore` / `hlAfter` options are empty. A light heuristic makes sure composed markdown elements like links or images are wrapped on their outside when containing a directive on their inside. Wrapping activates globally when at least one marker is non-empty and both aren’t `false`. Individual directives can be excluded by adding the option `hl=false`. 
 
 - **VSC**: Do you use Visual Studio Code? A ready-to-package syntax extension lives in `vsc/` to highlight PDL inline in Markdown, inside ```pdl``` fences, and in `.pdl` files. Build a `.vsix` with `npm install && npx vsce package`, then install it via “Extensions → ... → Install from VSIX…”.
 

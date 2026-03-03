@@ -1,0 +1,19 @@
+{
+  "question": { "Name Short": "EdgeName" },
+  "data": { "profile info": { "city": "Berlin" } },
+  "people": [
+    { "role": "owner", "name": "Alice" },
+    { "role": "Owner", "name": "Bob" }
+  ],
+  "flags": { "ready": true },
+  "Link": "https://example.com",
+  "note": " kept ",
+  "tags": [
+    { "tag": "a" },
+    { "tag": "b" }
+  ],
+  "tagsPrim": ["a", "b"],
+  "present": { "path": "value" },
+  "timestamp": 1700000000000,
+  "bar": "root"
+}
