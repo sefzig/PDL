@@ -47,9 +47,16 @@
       <section class="pg-panel">
         <div class="pg-panel-header" style="display:flex; align-items:center; justify-content:space-between;">
           <div>Result</div>
+          <div class="pg-result-tabs" role="tablist" aria-label="Result format">
+            <button id="tabHtml" class="pg-pill is-active" type="button" role="tab" aria-selected="true" aria-controls="rendered" tabindex="0">Rendered</button>
+            <button id="tabMd" class="pg-pill" type="button" role="tab" aria-selected="false" aria-controls="renderedMd" tabindex="-1">Markdown</button>
+          </div>
           <span id="status" class="pg-status"></span>
         </div>
-        <div id="rendered"></div>
+        <div class="pg-panel-body result-body">
+          <div id="rendered" class="result-pane" role="tabpanel" aria-labelledby="tabHtml"></div>
+          <textarea id="renderedMd" class="result-pane result-md" role="tabpanel" aria-labelledby="tabMd" readonly hidden></textarea>
+        </div>
       </section>
     </main>
   </div>

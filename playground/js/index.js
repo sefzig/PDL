@@ -1,5 +1,8 @@
 (function () {
   const renderedEl = document.getElementById('rendered');
+  const renderedMdEl = document.getElementById('renderedMd');
+  const tabHtml = document.getElementById('tabHtml');
+  const tabMd = document.getElementById('tabMd');
   const fixtureSelect = document.getElementById('fixtureSelect');
   const exportBtn = document.getElementById('exportBtn');
   const customResetBtn = document.getElementById('customReset');
@@ -80,6 +83,7 @@
   let mapTplToMd = [];
   let anchorMd = [];
   let anchorTpl = [];
+  let viewMode = 'html';
 
   async function ensureJSZip() {
     if (window.JSZip) return window.JSZip;
@@ -270,11 +274,16 @@
       isRendering = false;
     }
     renderedEl.innerHTML = html;
+    if (renderedMdEl) {
+      const markdownDisplay = (markdown || '').trim();
+      renderedMdEl.value = markdownDisplay;
+    }
     headingNodes = Array.from(renderedEl.querySelectorAll('h1, h2, h3, h4, h5, h6'));
     if (renderResult) {
       buildHeadingMaps(template, markdown, editor);
     }
     isRendering = false;
+    setResultView(viewMode);
   }
 
   function collectHeadingAnchors(markdown) {
@@ -587,6 +596,10 @@
   function wireUi() {
     if (fixtureSelect) {
       fixtureSelect.addEventListener('change', (e) => selectFixture(e.target.value));
+    }
+    if (tabHtml && tabMd) {
+      tabHtml.addEventListener('click', () => setResultView('html'));
+      tabMd.addEventListener('click', () => setResultView('markdown'));
     }
     if (customResetBtn) {
       customResetBtn.addEventListener('click', resetCustom);
@@ -1195,6 +1208,30 @@
 
   function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
+  }
+
+  function setResultView(mode) {
+    const target = mode === 'markdown' ? 'markdown' : 'html';
+    viewMode = target;
+    const showHtml = target === 'html';
+    if (renderedEl) {
+      renderedEl.hidden = !showHtml;
+      renderedEl.setAttribute('aria-hidden', showHtml ? 'false' : 'true');
+      renderedEl.setAttribute('tabindex', showHtml ? '0' : '-1');
+    }
+    if (renderedMdEl) {
+      renderedMdEl.hidden = showHtml;
+      renderedMdEl.setAttribute('aria-hidden', showHtml ? 'true' : 'false');
+      renderedMdEl.setAttribute('tabindex', showHtml ? '-1' : '0');
+    }
+    if (tabHtml && tabMd) {
+      tabHtml.classList.toggle('is-active', showHtml);
+      tabMd.classList.toggle('is-active', !showHtml);
+      tabHtml.setAttribute('aria-selected', showHtml ? 'true' : 'false');
+      tabMd.setAttribute('aria-selected', showHtml ? 'false' : 'true');
+      tabHtml.setAttribute('tabindex', showHtml ? '0' : '-1');
+      tabMd.setAttribute('tabindex', showHtml ? '-1' : '0');
+    }
   }
   
 

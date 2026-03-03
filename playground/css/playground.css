@@ -24,14 +24,21 @@ html:not([data-theme=\"dark\"]) #rendered code { color: #fff; }
 .pg-toolbar { display: flex; gap: 8px; align-items: center; }
 .pg-status { font-size: 12px; color: var(--color-text-muted); }
 .fold-toggle { cursor: pointer; }
-@media (max-width: 1100px) { .pg-main { grid-template-columns: 1fr; } #editor, #rendered { height: calc(50vh - 24px); } }
+.pg-result-tabs { display: flex; gap: 6px; align-items: center; }
+.pg-pill { border: 1px solid transparent; background: transparent; color: var(--color-text-muted); padding: 1.5px 3px; margin-top: 1px; margin-right: -3px; border-radius: 999px; cursor: pointer; font-size: 11px; line-height: 1.2; }
+.pg-pill:hover { background: var(--color-bg-subtle); }
+.pg-pill.is-active { color: var(--color-text-main);  }
+.result-body { height: calc(100vh - 48px - 40px); position: relative; }
+.result-pane { height: 100%; box-sizing: border-box; }
+.result-md { width: 100%; padding: 20px 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 13px; background: var(--color-surface); color: var(--color-text-main); border: none; resize: none; outline: none; white-space: pre; overflow: auto; }
+@media (max-width: 1100px) { .pg-main { grid-template-columns: 1fr; } #editor, .result-body { height: calc(50vh - 24px); } }
 
 h1, h2 {
    font-weight: 500;
 }
 
 #rendered { 
-   height: calc(100vh - 48px - 40px); 
+   height: 100%; 
    overflow-x: hidden; 
    padding: 0px 24px 24px 24px; 
    box-sizing: border-box; 

@@ -162,6 +162,7 @@ The build emits two manifests:
 Open `playground/index.html` in your browser and choose from the provided fixtures.
 The playground will try to load `fixtures-local.json` first (if present); it falls back to `fixtures.json` and blends both, with local entries overriding bundled ones. Only fixtures that exist *only* locally are marked “local” in the UI; public fixtures that are overridden locally stay unmarked.
 In the app, the fixture (`Custom`) is persisted in your Local Storage until you reset it.
+The Result panel now has tabs for `HTML` (default) and `Markdown`; switch tabs to view the raw rendered Markdown string or the HTML preview without re-rendering.
 Use the Export function to produce fixture files for other systems.
 
 # Niceties
