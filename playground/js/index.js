@@ -3,6 +3,8 @@
   const renderedMdEl = document.getElementById('renderedMd');
   const tabHtml = document.getElementById('tabHtml');
   const tabMd = document.getElementById('tabMd');
+  const splitter = document.getElementById('splitter');
+  const mainEl = document.querySelector('.pg-main');
   const fixtureSelect = document.getElementById('fixtureSelect');
   const exportBtn = document.getElementById('exportBtn');
   const customResetBtn = document.getElementById('customReset');
@@ -84,6 +86,14 @@
   let anchorMd = [];
   let anchorTpl = [];
   let viewMode = 'html';
+  let splitWide = 0.5;
+  let splitStack = 0.5;
+  let isStacked = false;
+  const SPLIT_WIDE_KEY = 'pdl:split:wide';
+  const SPLIT_STACK_KEY = 'pdl:split:stack';
+  const SPLIT_MIN = 0.25;
+  const SPLIT_MAX = 0.75;
+  const SPLITTER_PX = 6;
 
   async function ensureJSZip() {
     if (window.JSZip) return window.JSZip;
@@ -1210,6 +1220,101 @@
     return Math.min(max, Math.max(min, v));
   }
 
+  function detectStacked() {
+    return window.matchMedia && window.matchMedia('(max-width: 1100px)').matches;
+  }
+
+  function loadSplit(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      const val = raw == null ? NaN : parseFloat(raw);
+      if (Number.isFinite(val)) return clamp(val, SPLIT_MIN, SPLIT_MAX);
+    } catch {}
+    return fallback;
+  }
+
+  function persistSplit(key, value) {
+    try { localStorage.setItem(key, String(value)); } catch {}
+  }
+
+  function applyWideSplit(value) {
+    if (!mainEl) return;
+    const left = clamp(value, SPLIT_MIN, SPLIT_MAX);
+    const right = Math.max(SPLIT_MIN, 1 - left);
+    mainEl.style.setProperty('--pg-split-left', `${(left * 100).toFixed(2)}%`);
+    mainEl.style.setProperty('--pg-split-right', `${(right * 100).toFixed(2)}%`);
+  }
+
+  function applyStackSplit(value) {
+    if (!mainEl) return;
+    const top = clamp(value, SPLIT_MIN, SPLIT_MAX);
+    const bottom = 1 - top;
+    mainEl.style.setProperty('--pg-split-top', `${(top * 100).toFixed(2)}%`);
+    mainEl.style.setProperty('--pg-split-bottom', `${(bottom * 100).toFixed(2)}%`);
+  }
+
+  function applySplitState() {
+    if (!mainEl || !splitter) return;
+    isStacked = detectStacked();
+    mainEl.classList.toggle('is-stacked', isStacked);
+    mainEl.classList.add('with-split');
+    if (isStacked) {
+      applyStackSplit(splitStack);
+      splitter.setAttribute('aria-orientation', 'horizontal');
+      splitter.style.cursor = 'row-resize';
+    } else {
+      applyWideSplit(splitWide);
+      splitter.setAttribute('aria-orientation', 'vertical');
+      splitter.style.cursor = 'col-resize';
+    }
+  }
+
+  function startSplitDrag(e) {
+    if (!mainEl || !splitter) return;
+    const isTouch = e.type === 'touchstart';
+    const moveEvent = isTouch ? 'touchmove' : 'mousemove';
+    const endEvent = isTouch ? 'touchend' : 'mouseup';
+    const rect = mainEl.getBoundingClientRect();
+
+    const onMove = (evt) => {
+      const point = isTouch ? evt.touches[0] : evt;
+      if (!point) return;
+      if (isStacked) {
+        const frac = clamp((point.clientY - rect.top) / Math.max(1, rect.height), SPLIT_MIN, SPLIT_MAX);
+        splitStack = frac;
+        applyStackSplit(splitStack);
+        persistSplit(SPLIT_STACK_KEY, splitStack);
+      } else {
+        const frac = clamp((point.clientX - rect.left) / Math.max(1, rect.width), SPLIT_MIN, SPLIT_MAX);
+        splitWide = frac;
+        applyWideSplit(splitWide);
+        persistSplit(SPLIT_WIDE_KEY, splitWide);
+      }
+      splitter.classList.add('is-dragging');
+      evt.preventDefault();
+    };
+
+    const onEnd = () => {
+      splitter.classList.remove('is-dragging');
+      window.removeEventListener(moveEvent, onMove, { passive: false });
+      window.removeEventListener(endEvent, onEnd);
+    };
+
+    window.addEventListener(moveEvent, onMove, { passive: false });
+    window.addEventListener(endEvent, onEnd);
+    e.preventDefault();
+  }
+
+  function setupSplitter() {
+    if (!splitter || !mainEl) return;
+    splitWide = loadSplit(SPLIT_WIDE_KEY, splitWide);
+    splitStack = loadSplit(SPLIT_STACK_KEY, splitStack);
+    applySplitState();
+    splitter.addEventListener('mousedown', startSplitDrag);
+    splitter.addEventListener('touchstart', startSplitDrag, { passive: false });
+    window.addEventListener('resize', applySplitState);
+  }
+
   function setResultView(mode) {
     const target = mode === 'markdown' ? 'markdown' : 'html';
     viewMode = target;
@@ -1309,6 +1414,7 @@
   applyDocumentTheme(pref);
   lowPower = loadLowPower();
   if (lowPowerEl) lowPowerEl.checked = lowPower;
+  setupSplitter();
   wireUi();
   setupMonaco();
   injectDirectiveStyles();
