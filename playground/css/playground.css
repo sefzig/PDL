@@ -34,8 +34,9 @@ html:not([data-theme=\"dark\"]) #rendered code { color: #fff; }
 .pg-pill.is-active { color: var(--color-text-main);  }
 .result-body { height: 100%; position: relative; min-width: 0; overflow: hidden; }
 .result-pane { height: 100%; box-sizing: border-box; min-width: 0; }
-.result-md { width: 100%; padding: 20px 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 13px; background: var(--color-surface); color: var(--color-text-main); border: none; resize: none; outline: none; white-space: pre; overflow: auto; }
+.result-md { width: 100%; padding: 20px 24px 20px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 13px; background: var(--color-surface); color: var(--color-text-main); border: none; resize: none; outline: none; white-space: pre; overflow: auto; }
 .pg-main { --pg-panel-header-height: 40px; --pg-panel-border: 1px; }
+.pg-panel-header > div:first-child { margin-left: 4px; }
 .pg-splitter { 
   position: relative;
   width: 6px; 
@@ -43,7 +44,7 @@ html:not([data-theme=\"dark\"]) #rendered code { color: #fff; }
   transition: background 0.12s ease; 
   margin-top: calc(var(--pg-panel-header-height) - 5px);
   height: calc(100% - var(--pg-panel-header-height));
-  background: var(--color-bg-header);
+  background: var(--color-bg-app);
 }
 .pg-splitter::before {
   content: "";
@@ -76,7 +77,7 @@ h1, h2 {
 #rendered { 
    height: 100%; 
    overflow-x: hidden; 
-   padding: 0px 24px 24px 24px; 
+   padding: 0px 24px 24px 16px; 
    box-sizing: border-box; 
 }
 #rendered > * {
