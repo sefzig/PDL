@@ -5,6 +5,7 @@
   const tabMd = document.getElementById('tabMd');
   const splitter = document.getElementById('splitter');
   const mainEl = document.querySelector('.pg-main');
+  const panels = document.querySelectorAll('.pg-main .pg-panel');
   const fixtureSelect = document.getElementById('fixtureSelect');
   const exportBtn = document.getElementById('exportBtn');
   const customResetBtn = document.getElementById('customReset');
@@ -1238,7 +1239,7 @@
   }
 
   function applyWideSplit(value) {
-    if (!mainEl) return;
+    if (!mainEl || panels.length < 2) return;
     const left = clamp(value, SPLIT_MIN, SPLIT_MAX);
     const right = Math.max(SPLIT_MIN, 1 - left);
     mainEl.style.setProperty('--pg-split-left', `${(left * 100).toFixed(2)}%`);
@@ -1246,11 +1247,29 @@
   }
 
   function applyStackSplit(value) {
-    if (!mainEl) return;
+    if (!mainEl || panels.length < 2) return;
     const top = clamp(value, SPLIT_MIN, SPLIT_MAX);
     const bottom = 1 - top;
     mainEl.style.setProperty('--pg-split-top', `${(top * 100).toFixed(2)}%`);
     mainEl.style.setProperty('--pg-split-bottom', `${(bottom * 100).toFixed(2)}%`);
+  }
+
+  function currentWideSplit() {
+    if (panels.length < 2) return splitWide;
+    const a = panels[0].getBoundingClientRect().width;
+    const b = panels[1].getBoundingClientRect().width;
+    const total = a + b;
+    if (!total) return splitWide;
+    return clamp(a / total, SPLIT_MIN, SPLIT_MAX);
+  }
+
+  function currentStackSplit() {
+    if (panels.length < 2) return splitStack;
+    const a = panels[0].getBoundingClientRect().height;
+    const b = panels[1].getBoundingClientRect().height;
+    const total = a + b;
+    if (!total) return splitStack;
+    return clamp(a / total, SPLIT_MIN, SPLIT_MAX);
   }
 
   function applySplitState() {
@@ -1270,23 +1289,33 @@
   }
 
   function startSplitDrag(e) {
-    if (!mainEl || !splitter) return;
+    if (!mainEl || !splitter || panels.length < 2) return;
     const isTouch = e.type === 'touchstart';
     const moveEvent = isTouch ? 'touchmove' : 'mousemove';
     const endEvent = isTouch ? 'touchend' : 'mouseup';
-    const rect = mainEl.getBoundingClientRect();
+    const startPoint = isTouch ? (e.touches && e.touches[0]) : e;
+    const startX = startPoint ? startPoint.clientX : 0;
+    const startY = startPoint ? startPoint.clientY : 0;
+    const totalWidth = Math.max(1, mainEl.clientWidth);
+    const totalHeight = Math.max(1, mainEl.clientHeight);
+    const startLeftPx = panels[0].getBoundingClientRect().width;
+    const startTopPx = panels[0].getBoundingClientRect().height;
+    const minPxWide = totalWidth * SPLIT_MIN;
+    const minPxStack = totalHeight * SPLIT_MIN;
 
     const onMove = (evt) => {
       const point = isTouch ? evt.touches[0] : evt;
       if (!point) return;
       if (isStacked) {
-        const frac = clamp((point.clientY - rect.top) / Math.max(1, rect.height), SPLIT_MIN, SPLIT_MAX);
-        splitStack = frac;
+        const delta = point.clientY - startY;
+        const newTop = clamp(startTopPx + delta, minPxStack, totalHeight - minPxStack);
+        splitStack = clamp(newTop / Math.max(1, totalHeight), SPLIT_MIN, SPLIT_MAX);
         applyStackSplit(splitStack);
         persistSplit(SPLIT_STACK_KEY, splitStack);
       } else {
-        const frac = clamp((point.clientX - rect.left) / Math.max(1, rect.width), SPLIT_MIN, SPLIT_MAX);
-        splitWide = frac;
+        const delta = point.clientX - startX;
+        const newLeft = clamp(startLeftPx + delta, minPxWide, totalWidth - minPxWide);
+        splitWide = clamp(newLeft / Math.max(1, totalWidth), SPLIT_MIN, SPLIT_MAX);
         applyWideSplit(splitWide);
         persistSplit(SPLIT_WIDE_KEY, splitWide);
       }
