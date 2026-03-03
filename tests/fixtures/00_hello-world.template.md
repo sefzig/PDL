@@ -1,9 +1,9 @@
-// Hi there! This is an example of using PDL:
+// Hi there! This is a PDL template:
 
 Hello [value:greetings.{Language} title=true], it's [value:now date="%Y"]!
 
-// See the base data by pressing "Data".
-// Select a language in the "Variables".
+// See the Data to understand the incoming schema.
+// See the Variables to figure the global config.
 
 // For more examples, see the Tutorial.
 // For all combinations, see Cheatsheet.
