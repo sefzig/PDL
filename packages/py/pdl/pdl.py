@@ -130,6 +130,52 @@ def plural(n: int, singular: str) -> str:
     return singular if n == 1 else f"{singular}s"
 
 
+# ---- indentation helpers ----
+def _count_indent(s: str) -> int:
+    n = 0
+    for ch in s:
+        if ch == " ":
+            n += 1
+        elif ch == "\t":
+            n += 2
+        else:
+            break
+    return n
+
+
+def _strip_indent(line: str, to_strip: int) -> str:
+    if to_strip <= 0:
+        return line
+    prefix = ""
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if ch == " ":
+            prefix += " "
+            i += 1
+            continue
+        if ch == "\t":
+            prefix += "  "
+            i += 1
+            continue
+        break
+    rest = line[i:]
+    if to_strip >= len(prefix):
+        return rest
+    return prefix[to_strip:] + rest
+
+
+def _apply_block_deindent(lines: List[str], indent_before: int) -> List[str]:
+    amount = max(0, indent_before + 2)
+    out: List[str] = []
+    for ln in lines:
+        if str(ln).strip() == "":
+            out.append(ln)
+        else:
+            out.append(_strip_indent(str(ln), amount))
+    return out
+
+
 def pad(num: int, length: int = 2) -> str:
     s = str(int(abs(num)))
     return s.zfill(length)
@@ -1908,7 +1954,7 @@ class IfBlockDirective:
             else:
                 engine.stats.conds_false += 1
 
-        emitted = engine.expand_lines(
+        emitted_raw = engine.expand_lines(
             chosen,
             Scope(
                 root=scope.root,
@@ -1920,6 +1966,9 @@ class IfBlockDirective:
             ),
             depth + 1,
         )
+
+        indent_before = _count_indent(lines[i])
+        emitted = _apply_block_deindent(emitted_raw, indent_before)
 
         if not emitted and j < len(lines):
             probe, _ = InlineIfHelper.apply(lines[j], scope, engine.resolver, engine.stats)
@@ -1962,6 +2011,7 @@ class LoopBlockDirective:
             j += 1
 
         body = lines[i + 1 : j - 1]
+        indent_before = _count_indent(lines[i])
         engine.stats.loops += 1
 
         arr = engine.resolver.resolve_for_loop(str(params.get("path", "")), scope, default_ci=bool(params.get("ci")))
@@ -2007,11 +2057,13 @@ class LoopBlockDirective:
         else:
             merged = Engine.coalesce_loop_blocks(iter_blocks)
 
-        if next_is_blank:
-            while merged and merged[-1].strip() == "":
-                merged.pop()
+        adjusted = _apply_block_deindent(merged, indent_before)
 
-        return merged, j
+        if next_is_blank:
+            while adjusted and adjusted[-1].strip() == "":
+                adjusted.pop()
+
+        return adjusted, j
 
 
 class Engine:

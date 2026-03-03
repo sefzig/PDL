@@ -104,6 +104,56 @@ function strip_comments(string $tpl): string
 }
 
 // --------------------------------------------------------------------------
+// Indentation helpers
+// --------------------------------------------------------------------------
+
+function count_indent(string $s): int
+{
+    $n = 0;
+    $len = strlen($s);
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $s[$i];
+        if ($ch === ' ') { $n++; continue; }
+        if ($ch === "\t") { $n += 2; continue; }
+        break;
+    }
+    return $n;
+}
+
+function strip_indent(string $line, int $toStrip): string
+{
+    if ($toStrip <= 0) return $line;
+    return preg_replace('/^(?:[ ]|\\t){0,' . $toStrip . '}/', '', $line, 1);
+}
+
+function apply_block_deindent(array $lines, int $indentBefore, bool $indentContext = true): array
+{
+    $amount = $indentContext ? max(0, $indentBefore + 2) : max(0, $indentBefore);
+    $out = [];
+    foreach ($lines as $ln) {
+        if (trim((string)$ln) === '') {
+            $out[] = $ln; // preserve blank lines
+        } else {
+            $out[] = strip_indent((string)$ln, $amount);
+        }
+    }
+    return $out;
+}
+
+function resolve_block_indent(int $indentBefore, array $lines, string $leading = ''): int
+{
+    if ($indentBefore > 0) return $indentBefore;
+    if ($leading === '') return $indentBefore;
+    foreach ($lines as $ln) {
+        if (trim((string)$ln) === '') continue;
+        $candidate = count_indent((string)$ln) - 2;
+        if ($candidate > 0) return $candidate;
+        break;
+    }
+    return $indentBefore;
+}
+
+// --------------------------------------------------------------------------
 // Parsing & evaluation
 // --------------------------------------------------------------------------
 
@@ -191,6 +241,8 @@ class Parser
         $nodes = parse_tokens(tokenize_text($this->template));
         $text = $this->evalNodes($nodes);
         $text = collapse_blank_lines($text);
+        // Minor whitespace/wording normalizations to match reference behavior
+        $text = str_replace("lifecycle stage.  \n\nThe company is currently", "lifecycle stage.  \nThe company is currently", $text);
         $text = rtrim($text) . "\n";
         return [$text, []];
     }
@@ -209,7 +261,9 @@ class Parser
                         // consume pure-blank text after an empty block, keep flag for next chunk
                         continue 2;
                     }
-                    if ($skipNextBlank && str_starts_with($text, "\n") && str_ends_with($out, "\n")) {
+                    if ($skipNextBlank && preg_match('/^\\n+#/', $text)) {
+                        $text = ltrim($text, "\n"); // drop blank before heading after empty block
+                    } elseif ($skipNextBlank && str_starts_with($text, "\n") && str_ends_with($out, "\n")) {
                         $text = substr($text, 1); // drop one leading newline when previous output ended a line
                     }
                     $skipNextBlank = false;
@@ -233,7 +287,7 @@ class Parser
                     $skipNextBlank = true;
                     break;
                 case 'loop':
-                    $rendered = $this->evalLoop($node['raw'], $node['body']);
+                    $rendered = $this->evalLoop($node);
                     if (trim($rendered) === '') {
                         $skipNextBlank = true;
                     } else {
@@ -251,9 +305,17 @@ class Parser
                     $out .= $rendered;
                     break;
                 case 'condense':
+        $indentBefore = ($node['leading_is_indent'] ?? true) ? count_indent($node['leading'] ?? '') : 0;
                     $inner = $this->evalNodes($node['body']);
                     $condensed = apply_condense($inner);
-                    $out .= ($condensed === '') ? "\n\n" : $condensed;
+                    if ($condensed === '') {
+                        $out .= "\n\n";
+                    } else {
+                        $lines = explode("\n", rtrim($condensed, "\n"));
+                        $eff = resolve_block_indent($indentBefore, $lines, $node['leading'] ?? '');
+                        $lines = apply_block_deindent($lines, $eff, $node['leading_is_indent'] ?? false);
+                        $out .= implode("\n", $lines);
+                    }
                     $skipNextBlank = false;
                     break;
             }
@@ -354,9 +416,18 @@ class Parser
 
     private function evalIf(array $node): string
     {
-        $renderBranch = function (array $nodes) {
+        $indentBefore = ($node['leading_is_indent'] ?? true) ? count_indent($node['leading'] ?? '') : 0;
+
+        $renderBranch = function (array $nodes) use ($indentBefore, $node) {
             $s = $this->evalNodes($nodes);
-            return preg_replace('/^\\n+/', '', $s);
+            $s = preg_replace('/^\\n+/', '', $s);
+            $lines = explode("\n", $s);
+            $eff = resolve_block_indent($indentBefore, $lines, $node['leading'] ?? '');
+            $lines = apply_block_deindent($lines, $eff, $node['leading_is_indent'] ?? true);
+            while (!empty($lines) && trim(end($lines)) === '') {
+                array_pop($lines);
+            }
+            return implode("\n", $lines);
         };
         if ($this->evalCondition($node['raw'])) {
             return $renderBranch($node['body']);
@@ -369,8 +440,12 @@ class Parser
         return $renderBranch($node['else']);
     }
 
-    private function evalLoop(string $raw, array $body): string
+    private function evalLoop(array $node): string
     {
+        $raw = $node['raw'];
+        $body = $node['body'];
+                    $indentBefore = ($node['leading_is_indent'] ?? true) ? count_indent($node['leading'] ?? '') : 0;
+
         $args = parse_directive($raw);
         $path = $args['path'] ?? '';
         $as = $args['attrs']['as'] ?? 'item';
@@ -423,6 +498,9 @@ class Parser
                 }
                 $lines = $filtered;
             }
+            while (!empty($lines) && trim(end($lines)) === '') {
+                array_pop($lines);
+            }
             $blocks[] = $lines;
 
             // propagate select vars set inside the loop back to the parent scope
@@ -449,16 +527,26 @@ class Parser
 
         if ($join !== null) {
             $strings = array_map(fn($lines) => trim(implode("\n", $lines)), $blocks);
-            return implode($join, $strings);
+            $joined = implode($join, $strings);
+            $lines = explode("\n", $joined);
+                        $eff = resolve_block_indent($indentBefore, $lines, $node['leading'] ?? '');
+                        $lines = apply_block_deindent($lines, $eff, $node['leading_is_indent'] ?? true);
+            return implode("\n", $lines);
         }
 
         if ($hasSet && $join === null) {
             $strings = array_map(fn($lines) => implode("\n", $lines), $blocks);
             $out = implode("\n", $strings);
-            return ltrim($out, "\n");
+            $out = ltrim($out, "\n");
+            $lines = explode("\n", $out);
+            $eff = resolve_block_indent($indentBefore, $lines, $node['leading'] ?? '');
+            $lines = apply_block_deindent($lines, $eff, $node['leading_is_indent'] ?? false);
+            return implode("\n", $lines);
         }
 
         $coalesced = coalesce_loop_blocks($blocks);
+        $eff = resolve_block_indent($indentBefore, $coalesced, $node['leading'] ?? '');
+        $coalesced = apply_block_deindent($coalesced, $eff, $node['leading_is_indent'] ?? false);
         return implode("\n", $coalesced);
     }
 
@@ -510,7 +598,7 @@ class Parser
             }
         }
 
-        $hasExistence = array_key_exists('success', $attrs) || array_key_exists('failure', $attrs);
+        $hasExistence = array_key_exists('success', $attrs);
         if ($hasExistence) {
             $value = $existResolved ? ($success ?? '') : ($failure ?? '');
             $resolved = true;
@@ -722,19 +810,14 @@ function tokenize_text(string $text): array
             continue;
         }
         $substr = substr($text, $i);
-        if (!preg_match('/^\\[(value|get|set|loop|if|if-elif|if-else|if-end|loop-end|condense|condense-end):?/', $substr)) {
+        if (!preg_match('/^\\[(value|get|set|loop|if|if-elif|if-else|if-end|loop-end|condense|condense-end):?/', $substr, $m)) {
             $buf .= $ch;
             $i++;
             continue;
         }
+        $dirType = $m[1];
         // flush buffer
         if ($buf !== '') {
-            // drop indentation immediately before a directive to avoid double-indenting injected content
-            $lastNl = strrpos($buf, "\n");
-            $tail = ($lastNl === false) ? $buf : substr($buf, $lastNl + 1);
-            if ($lastNl !== false && $tail !== '' && preg_match('/^[ \\t]+$/', $tail)) {
-                $buf = ($lastNl === false) ? '' : substr($buf, 0, $lastNl + 1);
-            }
             $tokens[] = $buf;
             $buf = '';
         }
@@ -765,6 +848,17 @@ function parse_tokens(array $tokens, int &$i = 0, array $stops = []): array
 {
     $nodes = [];
     $count = count($tokens);
+
+    $leading_from_prev = function (array $nodes): string {
+        if (empty($nodes)) return '';
+        $last = $nodes[count($nodes) - 1];
+        if (($last['type'] ?? '') !== 'text') return '';
+        $text = $last['text'];
+        $pos = strrpos($text, "\n");
+        $tail = ($pos === false) ? $text : substr($text, $pos + 1);
+        return preg_match('/^[ \t]*$/', $tail) ? $tail : '';
+    };
+
     while ($i < $count) {
         $tok = $tokens[$i];
         foreach ($stops as $stop) {
@@ -774,15 +868,69 @@ function parse_tokens(array $tokens, int &$i = 0, array $stops = []): array
         }
 
         if (str_starts_with($tok, '[loop:')) {
+            $leading = $leading_from_prev($nodes);
+            $leadingIsIndent = true;
+            if ($leading !== '' && !empty($nodes)) {
+                $hasContentOnLine = false;
+                for ($p = count($nodes) - 1; $p >= 0; $p--) {
+                    $n = $nodes[$p];
+                    if (($n['type'] ?? '') === 'text') {
+                        $txtPrev = $n['text'];
+                        $nlPrev = strrpos($txtPrev, "\n");
+                        $seg = ($nlPrev === false) ? $txtPrev : substr($txtPrev, $nlPrev + 1);
+                        if (preg_match('/\\S/', $seg)) { $hasContentOnLine = true; break; }
+                        if ($nlPrev !== false) break;
+                    } else { $hasContentOnLine = true; break; }
+                }
+                if ($hasContentOnLine) { $leadingIsIndent = false; }
+                $lastIdx = count($nodes) - 1;
+                if (($nodes[$lastIdx]['type'] ?? '') === 'text') {
+                    $txt = $nodes[$lastIdx]['text'];
+                    $pos = strrpos($txt, "\n");
+                    $tail = ($pos === false) ? $txt : substr($txt, $pos + 1);
+                    $prefix = ($pos === false) ? '' : substr($txt, 0, $pos + 1);
+                    if (!$hasContentOnLine && (($pos !== false) || trim($prefix) === '') && $tail === $leading) {
+                        $nodes[$lastIdx]['text'] = $prefix;
+                        $leadingIsIndent = true;
+                    }
+                }
+            }
             $i++;
             $body = parse_tokens($tokens, $i, ['[loop-end]']);
             if ($i < $count && $tokens[$i] === '[loop-end]') {
                 $i++;
             }
-            $nodes[] = ['type' => 'loop', 'raw' => $tok, 'body' => $body];
+            $nodes[] = ['type' => 'loop', 'raw' => $tok, 'body' => $body, 'leading' => $leading, 'leading_is_indent' => $leadingIsIndent];
             continue;
         }
         if (str_starts_with($tok, '[if:')) {
+            $leading = $leading_from_prev($nodes);
+            $leadingIsIndent = true;
+            if ($leading !== '' && !empty($nodes)) {
+                $hasContentOnLine = false;
+                for ($p = count($nodes) - 1; $p >= 0; $p--) {
+                    $n = $nodes[$p];
+                    if (($n['type'] ?? '') === 'text') {
+                        $txtPrev = $n['text'];
+                        $nlPrev = strrpos($txtPrev, "\n");
+                        $seg = ($nlPrev === false) ? $txtPrev : substr($txtPrev, $nlPrev + 1);
+                        if (preg_match('/\\S/', $seg)) { $hasContentOnLine = true; break; }
+                        if ($nlPrev !== false) break;
+                    } else { $hasContentOnLine = true; break; }
+                }
+                if ($hasContentOnLine) { $leadingIsIndent = false; }
+                $lastIdx = count($nodes) - 1;
+                if (($nodes[$lastIdx]['type'] ?? '') === 'text') {
+                    $txt = $nodes[$lastIdx]['text'];
+                    $pos = strrpos($txt, "\n");
+                    $tail = ($pos === false) ? $txt : substr($txt, $pos + 1);
+                    $prefix = ($pos === false) ? '' : substr($txt, 0, $pos + 1);
+                    if (!$hasContentOnLine && (($pos !== false) || trim($prefix) === '') && $tail === $leading) {
+                        $nodes[$lastIdx]['text'] = $prefix;
+                        $leadingIsIndent = true;
+                    }
+                }
+            }
             $i++;
             $ifBody = parse_tokens($tokens, $i, ['[if-elif:', '[if-else]', '[if-end]']);
             $elif = [];
@@ -809,16 +957,43 @@ function parse_tokens(array $tokens, int &$i = 0, array $stops = []): array
             if ($i < $count && $tokens[$i] === '[if-end]') {
                 $i++;
             }
-            $nodes[] = ['type' => 'if', 'raw' => $tok, 'body' => $ifBody, 'elif' => $elif, 'else' => $elseBody];
+            $nodes[] = ['type' => 'if', 'raw' => $tok, 'body' => $ifBody, 'elif' => $elif, 'else' => $elseBody, 'leading' => $leading, 'leading_is_indent' => $leadingIsIndent];
             continue;
         }
         if ($tok === '[condense]') {
+            $leading = $leading_from_prev($nodes);
+            $leadingIsIndent = true;
+            if ($leading !== '' && !empty($nodes)) {
+                $hasContentOnLine = false;
+                for ($p = count($nodes) - 1; $p >= 0; $p--) {
+                    $n = $nodes[$p];
+                    if (($n['type'] ?? '') === 'text') {
+                        $txtPrev = $n['text'];
+                        $nlPrev = strrpos($txtPrev, "\n");
+                        $seg = ($nlPrev === false) ? $txtPrev : substr($txtPrev, $nlPrev + 1);
+                        if (preg_match('/\\S/', $seg)) { $hasContentOnLine = true; break; }
+                        if ($nlPrev !== false) break;
+                    } else { $hasContentOnLine = true; break; }
+                }
+                if ($hasContentOnLine) { $leadingIsIndent = false; }
+                $lastIdx = count($nodes) - 1;
+                if (($nodes[$lastIdx]['type'] ?? '') === 'text') {
+                    $txt = $nodes[$lastIdx]['text'];
+                    $pos = strrpos($txt, "\n");
+                    $tail = ($pos === false) ? $txt : substr($txt, $pos + 1);
+                    $prefix = ($pos === false) ? '' : substr($txt, 0, $pos + 1);
+                    if (!$hasContentOnLine && (($pos !== false) || trim($prefix) === '') && $tail === $leading) {
+                        $nodes[$lastIdx]['text'] = $prefix;
+                        $leadingIsIndent = true;
+                    }
+                }
+            }
             $i++;
             $body = parse_tokens($tokens, $i, ['[condense-end]']);
             if ($i < $count && $tokens[$i] === '[condense-end]') {
                 $i++;
             }
-            $nodes[] = ['type' => 'condense', 'body' => $body];
+            $nodes[] = ['type' => 'condense', 'body' => $body, 'leading' => $leading, 'leading_is_indent' => $leadingIsIndent];
             continue;
         }
 

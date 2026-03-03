@@ -106,6 +106,41 @@ function plural(n, singular) {
   return n === 1 ? singular : `${singular}s`;
 }
 
+// ---- indentation helpers ----
+function countIndent(str) {
+  let n = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (ch === ' ') n++;
+    else if (ch === '\t') n += 2;
+    else break;
+  }
+  return n;
+}
+
+function stripIndent(line, toStrip) {
+  if (toStrip <= 0) return line;
+  let prefix = '';
+  let i = 0;
+  while (i < line.length) {
+    const ch = line[i];
+    if (ch === ' ') { prefix += ' '; i++; continue; }
+    if (ch === '\t') { prefix += '  '; i++; continue; }
+    break;
+  }
+  const rest = line.slice(i);
+  if (toStrip >= prefix.length) return rest;
+  return prefix.slice(toStrip) + rest;
+}
+
+function applyBlockDeindent(lines, indentBefore) {
+  const amount = Math.max(0, indentBefore + 2);
+  return lines.map((ln) => {
+    if (String(ln).trim() === '') return ln; // leave blank lines untouched
+    return stripIndent(String(ln), amount);
+  });
+}
+
 // ---- date/time helpers ----
 function pad(num, len = 2) {
   const s = String(Math.trunc(Math.abs(num)));
@@ -1831,7 +1866,7 @@ class IfBlockDirective {
       else engine.stats.conds_false++;
     }
 
-    const emitted = engine.expandLines(
+    const emittedRaw = engine.expandLines(
       chosen,
       new Scope({
         root: scope.root,
@@ -1842,6 +1877,9 @@ class IfBlockDirective {
       }),
       depth + 1
     );
+
+    const indentBefore = countIndent(lines[i]);
+    const emitted = applyBlockDeindent(emittedRaw, indentBefore);
 
     if (!emitted.length && j < lines.length) {
       const [probe] = InlineIfHelper.apply(lines[j], scope, engine.resolver, engine.stats);
@@ -1884,6 +1922,7 @@ class LoopBlockDirective {
     }
 
     const body = lines.slice(i + 1, j - 1);
+    const indentBefore = countIndent(lines[i]);
     engine.stats.loops++;
 
     const arr = engine.resolver.resolveForLoop(String(params.path), scope, { default_ci: Boolean(params.ci) });
@@ -1932,11 +1971,13 @@ class LoopBlockDirective {
       merged = Engine.coalesceLoopBlocks(iterBlocks);
     }
 
+    let adjusted = applyBlockDeindent(merged, indentBefore);
+
     if (nextIsBlank) {
-      while (merged.length && merged[merged.length - 1].trim() === '') merged.pop();
+      while (adjusted.length && adjusted[adjusted.length - 1].trim() === '') adjusted.pop();
     }
 
-    return [merged, j];
+    return [adjusted, j];
   }
 }
 

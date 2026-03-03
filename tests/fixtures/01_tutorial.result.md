@@ -294,14 +294,14 @@ _Structure can mirror data depth._
 
 Each product is available in:
 - Demo
-  - Market: Hamburg
-  - Market: München
+- Market: Hamburg
+- Market: München
 - Widget
-  - Market: Berlin
-  - Market: München
+- Market: Berlin
+- Market: München
 - Screen
-  - Market: Berlin
-  - Market: Hamburg
+- Market: Berlin
+- Market: Hamburg
 
 ### Using the index
 

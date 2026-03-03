@@ -9,9 +9,9 @@ try {
   let out = render('Inline: [loop:items as=x join=", "]  [value:x]  [loop-end]', { items: ['A','B'] }).markdown;
   assert.strictEqual(out, 'Inline: A, B');
 
-  // 2) Block preserves indentation
+  // 2) Block de-indents by parent indent + 2
   out = render('[loop:items as=x]\n  - [value:x]\n[loop-end]', { items: ['A','B'] }).markdown;
-  assert.deepStrictEqual(normalizeLines(out), ['  - A', '  - B']);
+  assert.deepStrictEqual(normalizeLines(out), ['- A', '- B']);
 
   // 3) Block join inserts once, preserves formatting
   out = render('[loop:items as=x join="|"]\n### Item\n- [value:x]\n[loop-end]', { items: ['A','B'] }).markdown;

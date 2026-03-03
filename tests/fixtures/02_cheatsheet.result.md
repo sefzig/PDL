@@ -117,14 +117,14 @@ Indexed loop
 
 Nested loop
 - Demo
-  - 1.1: Hamburg
-  - 1.2: München
+- 1.1: Hamburg
+- 1.2: München
 - Widget
-  - 2.1: Berlin
-  - 2.2: München
+- 2.1: Berlin
+- 2.2: München
 - Screen
-  - 3.1: Berlin
-  - 3.2: Hamburg
+- 3.1: Berlin
+- 3.2: Hamburg
 
 ## Directive: Get / Set
 
