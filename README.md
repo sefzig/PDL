@@ -84,8 +84,9 @@ Golden output tests can be run accross the fixtures:
 - Test specific fixtures:          `make test 01 03`
 - Test and update fixture results: `make test update`
 
-Flags for language, fixtures, and updates can be combined freely.
 If no language is chosen, the commands default to `js`.
+`update` is risky, only use it when you are certain the libraries are ok.
+Flags for language, fixtures, and updates can be combined freely.
 
 # Integrations
 
