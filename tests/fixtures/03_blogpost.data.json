@@ -1,0 +1,12 @@
+{
+  "report": {
+    "subject": "House in the woods",
+    "date": "2026-02-06T12:34:56Z",
+    "author": "VERSO Group"
+  },
+  "products": [
+    { "name": "concrete", "emissions": "1.2", "unit": "kg/t" },
+    { "name": "wood",     "emissions": "0.1", "unit": "kg/t" },
+    { "name": "metal",    "emissions": "13",  "unit": "kg/t" }
+  ]
+}
