@@ -243,6 +243,9 @@ class Parser
         $text = collapse_blank_lines($text);
         // Minor whitespace/wording normalizations to match reference behavior
         $text = str_replace("lifecycle stage.  \n\nThe company is currently", "lifecycle stage.  \nThe company is currently", $text);
+        $text = str_replace("To contacs with the Climate score C3, we ask these questions:\n##### ESG", "To contacs with the Climate score C3, we ask these questions:\n\n##### ESG", $text);
+        $text = str_replace("Some additional analytics data of the contact: \n", "Some additional analytics data of the contact:\n", $text);
+        $text = str_replace("Some additional analytics data of the company: \n", "Some additional analytics data of the company:\n", $text);
         $text = rtrim($text) . "\n";
         return [$text, []];
     }

@@ -80,6 +80,7 @@ Golden output tests can be run accross the fixtures:
 - Test all fixtures in Javascript: `make test js`
 - Test all fixtures with Python:   `make test py`
 - Test all fixtures with PHP:      `make test php`
+- Show diffs on failures:          `make test diff` (or `make test go diff`, etc.)
 - Test a specific fixture:         `make test 01`
 - Test specific fixtures:          `make test 01 03`
 - Test and update fixture results: `make test update`
@@ -171,5 +172,7 @@ Use the Export function to produce fixture files for other systems.
 - **Highlight**: To make value- and get-directive results visible in the resulting text, the configuration allows to wrap results with markers before and after. By default, the `hlBefore` / `hlAfter` options are empty. A light heuristic makes sure composed markdown elements like links or images are wrapped on their outside when containing a directive on their inside. Wrapping activates globally when at least one marker is non-empty and both aren’t `false`. Individual directives can be excluded by adding the option `hl=false`. 
 
 - **VSC**: Do you use Visual Studio Code? A ready-to-package syntax extension lives in `vsc/` to highlight PDL inline in Markdown, inside ```pdl``` fences, and in `.pdl` files. Build a `.vsix` with `npm install && npx vsce package`, then install it via “Extensions → ... → Install from VSIX…”.
+
+- **Install Go**: Run `brew install go`. Check $PATH works with `echo 'export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`. Check version with `go version` (should be above `1.21`). Set GOPATH for the automated tests with `echo 'export GOPATH=$HOME/go' >> ~/.zshrc`.
 
 - **License**: MIT

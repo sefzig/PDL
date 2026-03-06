@@ -32,23 +32,55 @@ build:
 
 test:
 	@set -- $(filter-out $@,$(MAKECMDGOALS)); \
-	target="all"; update=0; key=""; \
+	target="all"; update=0; diff=0; noerr=1; key=""; \
 	for arg in "$$@"; do \
-		if [ "$$arg" = "js" ] || [ "$$arg" = "py" ] || [ "$$arg" = "php" ] || [ "$$arg" = "all" ]; then target="$$arg"; \
+		if [ "$$arg" = "js" ] || [ "$$arg" = "py" ] || [ "$$arg" = "php" ] || [ "$$arg" = "go" ] || [ "$$arg" = "all" ]; then target="$$arg"; \
 		elif [ "$$arg" = "update" ]; then update=1; \
+		elif [ "$$arg" = "diff" ]; then diff=1; \
+		elif [ "$$arg" = "strict" ]; then noerr=0; \
+		elif [ "$$arg" = "noerr" ]; then noerr=1; \
 		elif [ -z "$$key" ]; then key="$$arg"; fi; \
 	done; \
 	if [ "$$target" = "js" ]; then \
-		if [ $$update -eq 1 ]; then \
-			if [ -n "$$key" ]; then node tests/js/test.js update $$key; else node tests/js/test.js update; fi; \
-		else \
-			if [ -n "$$key" ]; then node tests/js/test.js $$key; else node tests/js/test.js; fi; \
-		fi; \
+		args=""; \
+		[ $$update -eq 1 ] && args="$$args update"; \
+		[ -n "$$key" ] && args="$$args $$key"; \
+		[ $$diff -eq 1 ] && args="$$args diff"; \
+		set -- $$args; node tests/js/test.js "$$@"; status=$$?; \
+		[ $$noerr -eq 1 ] || exit $$status; \
 	elif [ "$$target" = "py" ]; then \
-		if [ -n "$$key" ]; then python3 tests/py/run.py $$key; else python3 tests/py/run.py; fi; \
+		args=""; \
+		[ -n "$$key" ] && args="$$args $$key"; \
+		[ $$diff -eq 1 ] && args="$$args diff"; \
+		set -- $$args; python3 tests/py/run.py "$$@"; status=$$?; \
+		[ $$noerr -eq 1 ] || exit $$status; \
+	elif [ "$$target" = "go" ]; then \
+		if command -v go >/dev/null 2>&1; then \
+			if [ -n "$$key" ]; then \
+				args=""; \
+				[ $$update -eq 1 ] && args="$$args update"; \
+				args="$$args $$key"; \
+				[ $$diff -eq 1 ] && args="$$args diff"; \
+				tmpbin=$$(mktemp /tmp/pdl-go-XXXXXX); \
+				set -- $$args; cd packages/go/pdl && GOCACHE=/tmp/gocache GOTMPDIR=/tmp go build -o $$tmpbin ./cmd/testrun && $$tmpbin "$$@"; status=$$?; rm -f $$tmpbin; \
+			else \
+				args=""; \
+				[ $$update -eq 1 ] && args="$$args update"; \
+				[ $$diff -eq 1 ] && args="$$args diff"; \
+				tmpbin=$$(mktemp /tmp/pdl-go-XXXXXX); \
+				set -- $$args; cd packages/go/pdl && GOCACHE=/tmp/gocache GOTMPDIR=/tmp go build -o $$tmpbin ./cmd/testrun && $$tmpbin "$$@"; status=$$?; rm -f $$tmpbin; \
+			fi; \
+			[ $$noerr -eq 1 ] || exit $$status; \
+		else \
+			echo "go binary not found; skipping"; \
+		fi; \
 	elif [ "$$target" = "php" ]; then \
 		if command -v php >/dev/null 2>&1; then \
-			if [ -n "$$key" ]; then php tests/php/run.php $$key; else php tests/php/run.php; fi; \
+			args=""; \
+			[ -n "$$key" ] && args="$$args $$key"; \
+			[ $$diff -eq 1 ] && args="$$args diff"; \
+			set -- $$args; php tests/php/run.php "$$@"; status=$$?; \
+			[ $$noerr -eq 1 ] || exit $$status; \
 		else \
 			echo "php binary not found; skipping"; \
 		fi; \
@@ -56,9 +88,11 @@ test:
 		if [ $$update -eq 1 ]; then \
 			if [ -n "$$key" ]; then node tests/both/test.js update $$key; else node tests/both/test.js update; fi; \
 		else \
-			green="\033[32m"; red="\033[31m"; reset="\033[0m"; \
+			green="\033[32m"; red="\033[31m"; dim="\033[2m"; reset="\033[0m"; \
+			[ $$diff -eq 1 ] && show_diff=1 || show_diff=0; \
 			php_avail=1; command -v php >/dev/null 2>&1 || php_avail=0; \
-			pass_js=0; pass_py=0; pass_php=0; total=0; total_js=0; total_py=0; total_php=0; \
+			go_avail=1; command -v go >/dev/null 2>&1 || go_avail=0; \
+			pass_js=0; pass_py=0; pass_php=0; pass_go=0; total=0; total_js=0; total_py=0; total_php=0; total_go=0; \
 			bases=$$(cd tests/fixtures && ls *.template.md | sed 's/.template.md//' | sort -V); \
 			for base in $$bases; do \
 				total=$$((total+1)); fail=""; \
@@ -67,18 +101,41 @@ test:
 				if [ $$php_avail -eq 1 ]; then \
 					php tests/php/run.php $$base >/dev/null 2>&1 && pass_php=$$((pass_php+1)) || fail="$$fail$${fail:+,}php"; total_php=$$((total_php+1)); \
 				fi; \
+				if [ $$go_avail -eq 1 ]; then \
+					total_go=$$((total_go+1)); \
+					if cd packages/go/pdl && GOCACHE=/tmp/gocache GOTMPDIR=/tmp go test -count=1 -run "TestRenderFixtures/$$base" ./... >/dev/null 2>&1; then \
+						pass_go=$$((pass_go+1)); \
+					else \
+						fail="$$fail$${fail:+,}go"; \
+					fi; \
+					cd - >/dev/null 2>&1; \
+				fi; \
 				if [ -z "$$fail" ]; then \
 					printf "$${green}✓$${reset} %s\n" $$base; \
 				else \
-					printf "$${red}✗$${reset} %s [%s]\n" $$base "$$fail"; \
+					fail_sorted=$$(printf "%s" "$$fail" | tr ',' '\n' | sort | paste -sd',' - | sed 's/,/, /g'); \
+					printf "$${red}✗$${reset} %s $${dim}%s$${reset}\n" $$base "$$fail_sorted"; \
+					if [ $$show_diff -eq 1 ]; then \
+						first_fail=$${fail%%,*}; \
+						if [ "$$first_fail" = "js" ]; then node tests/js/test.js diff diff-only no-summary $$base; \
+						elif [ "$$first_fail" = "py" ]; then python3 tests/py/run.py diff diff-only no-summary $$base; \
+						elif [ "$$first_fail" = "php" ]; then php tests/php/run.php diff diff-only no-summary $$base; \
+						elif [ "$$first_fail" = "go" ]; then cd packages/go/pdl && GOCACHE=/tmp/gocache GOTMPDIR=/tmp go run ./cmd/testrun diff diff-only no-summary $$base && cd - >/dev/null 2>&1; \
+						fi; \
+					fi; \
 				fi; \
 			done; \
-			[ $$pass_js -eq $$total_js ] && printf "$${green}✓ pass$${reset} (js %d/%d)\n" $$pass_js $$total_js || printf "$${red}✗ fail$${reset} (js %d/%d)\n" $$pass_js $$total_js; \
-			[ $$pass_py -eq $$total_py ] && printf "$${green}✓ pass$${reset} (py %d/%d)\n" $$pass_py $$total_py || printf "$${red}✗ fail$${reset} (py %d/%d)\n" $$pass_py $$total_py; \
+			[ $$pass_js -eq $$total_js ] && printf "$${green}✓ pass js: %d/%d$${reset}\n" $$pass_js $$total_js || printf "$${red}✗ fail js: %d/%d$${reset}\n" $$((total_js-pass_js)) $$total_js; \
+			[ $$pass_py -eq $$total_py ] && printf "$${green}✓ pass py: %d/%d$${reset}\n" $$pass_py $$total_py || printf "$${red}✗ fail py: %d/%d$${reset}\n" $$((total_py-pass_py)) $$total_py; \
 			if [ $$php_avail -eq 1 ]; then \
-				[ $$pass_php -eq $$total_php ] && printf "$${green}✓ pass$${reset} (php %d/%d)\n" $$pass_php $$total_php || printf "$${red}✗ fail$${reset} (php %d/%d)\n" $$pass_php $$total_php; \
+				[ $$pass_php -eq $$total_php ] && printf "$${green}✓ pass php: %d/%d$${reset}\n" $$pass_php $$total_php || printf "$${red}✗ fail php: %d/%d$${reset}\n" $$((total_php-pass_php)) $$total_php; \
 			else \
 				printf "$${yellow:-}php binary not found; skipped$${reset}\n"; \
+			fi; \
+			if [ $$go_avail -eq 1 ]; then \
+				[ $$pass_go -eq $$total_go ] && printf "$${green}✓ pass go: %d/%d$${reset}\n" $$pass_go $$total_go || printf "$${red}✗ fail go: %d/%d$${reset}\n" $$((total_go-pass_go)) $$total_go; \
+			else \
+				printf "$${yellow:-}go binary not found; skipped$${reset}\n"; \
 			fi; \
 			exit 0; \
 		fi; \

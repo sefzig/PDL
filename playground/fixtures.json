@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-03T21:10:51.585Z",
+  "generatedAt": "2026-03-05T22:13:22.603Z",
   "by": "scripts/build-playground.js",
   "fixtureCount": 4,
   "fixtures": [
@@ -197,54 +197,36 @@
       "expected": "# PDL Cheatsheet\n\n## Global Variables\n\n* Screen\n\n## Directive: Value\n\nSimple paths\n* Digital\n* Widget\n\nFiltered paths (number)\n* Screen\n* Widget\n* Demo\n* Widget\n* Widget\n\nFiltered paths (combine)\n* Widget\n* Demo\n\nFiltered paths (string)\n* 30\n* Widget\n* Widget\n* Widget\n* Widget\n\nFallback paths\n* Digital\n* Screen\n* missing\n\nNested values\n* 10\n\nExistence option\n* yes\n* no\n\nReplace values\n* Presentation\n* Dee\n* **digital**\n\nTrim values\n* digital\n* Digital\n* DIGITAL\n* digital\n\nTuncate values\n* Lorem ipsum\n* Lorem ipsum\"...\"\n* 30\n\nFormat casing\n* diGiTaLProduct\n* DiGiTaLProduct\n* di_gi_ta_l_product\n* DI_GI_TA_L_PRODUCT\n\nFormat dates\n* 06.02.2026\n* 01.02.2026 09:00 Uhr\n* 06. %B 2026, 11:00 Uhr\n\nFormat time\n* 7 days\n* 1 hour 30 minutes\n\nEscape Markdown\n* Launch **Today**\n* Launch \\*\\*Today\\*\\*\n\nStringify data\n* \"Digital\"\n* 30\n* {\"name\":\"Demo\",\"price\":0,\"locations\":[\"Hamburg\",\"München\"]}\n* [\"Hamburg\",\"München\"]\n\n## Directive: Conditional\n\nBlock conditional:\n- Premium\n\nInline conditionals\n* confirms\n* available\n* exists\n* match\n* prefix\n* contains\n* suffix\n* ci-match\n\n## Directive: Loop\n\nSimple loop\n- Demo\n- Widget\n- Screen\n\nFiltered loop\n- Widget\n- Screen\n\nInline loop\n* Demo, Widget, Screen\n\nIndexed loop\n- 1: Demo\n- 2: Widget\n- 3: Screen\n\nNested loop\n- Demo\n- 1.1: Hamburg\n- 1.2: München\n- Widget\n- 2.1: Berlin\n- 2.2: München\n- Screen\n- 3.1: Berlin\n- 3.2: Hamburg\n\n## Directive: Get / Set\n\nRegular set \n* Screen Launch\n\nMutable set \n* Revised\n\nSet array \n* Web and Email\n\nGet trimmed \n* Digital\n\nSet humble \n* Digital\n\nSet in scope\n- Demo\n- Widget\n- Screen\n* missing\n\nUnset \n* [get:feature]\n\n## Directive: Condense\n\n- Launch, ready!\n\n## Comments\n\n* No comment.\n* http://example.com//path\n* a//b\n"
     },
     {
-      "name": "03_edge-cases",
-      "template": "## Bracketed Keys\n\nQuoted key: [value:question[\"Name Short\"]]\n\n## Case-Insensitive Filter\n\n[value:people[role=\"Owner\" ci=true].name]\n\n## Inline If with Nested Value\n\nStatus: [if:flags.ready]ready[if-else]pending[if-end]\n\n## Highlight in Links\n\nSee [Docs]({Link}) and <a href=\"{Link}\">link</a>\n\n## Set-Only Line\n\nAbove\n[set:foo=1]\nBelow\n\n## Condense Cleanup\n\n[condense]\n ( [value:note], )\n[condense-end]\n\n## Success / Failure\n\n[value:missing.path failure=\"fallback\"]\n[value:present.path success=\"ok\" failure=\"bad\"]\n\n## Invalid Date + Time\n\n[value:timestamp date=\"%Y-%m-%d\" time=\"%H:%M\"]\n\n## List Blank Suppression\n\n- First\n[if:missing.key]\n- Hidden\n[if-end]\n- Second\n\n## Humble and Const\n\n[set:bar=\"local\" humble=true]\nbar: [value:bar]\n\n[set:baz=1]\n[set:baz=2]\nbaz: [value:baz]\n\n[set:qux=1 const=false]\n[set:qux=2]\nqux: [value:qux]\n\n## Primitive Loop Join\n\n[loop:tagsPrim as=tag join=\", \"][value:tag][loop-end]\n",
+      "name": "03_blogpost",
+      "template": "# Example\n\n[value:report.author], \n[value:report.date date=\"%d.%m.%Y\"]\n\n// This is the PDL example from the blogpost:\n\nThese are the emissions from the products used for the [value:report.subject].\n[loop:products as=product]\n- *[value:product.name title=true]*: [value:product.emissions] [value:product.unit] -\n  [if:product.emissions>{Goal}]\n    _We strive to reduce emissions below {Goal}_.\n  [if-else]\n    Produces sufficiently minimal emissions.\n  [if-end]\n[loop-end]\n\n// See the \"Data\" tab for the incoming data.\n// See the \"Variables\" tab for the defined goal.\n",
       "data": {
-        "question": {
-          "Name Short": "EdgeName"
+        "report": {
+          "subject": "House in the woods",
+          "date": "2026-02-06T12:34:56Z",
+          "author": "VERSO Group"
         },
-        "data": {
-          "profile info": {
-            "city": "Berlin"
-          }
-        },
-        "people": [
+        "products": [
           {
-            "role": "owner",
-            "name": "Alice"
+            "name": "concrete",
+            "emissions": "1.2",
+            "unit": "kg/t"
           },
           {
-            "role": "Owner",
-            "name": "Bob"
-          }
-        ],
-        "flags": {
-          "ready": true
-        },
-        "Link": "https://example.com",
-        "note": " kept ",
-        "tags": [
-          {
-            "tag": "a"
+            "name": "wood",
+            "emissions": "0.1",
+            "unit": "kg/t"
           },
           {
-            "tag": "b"
+            "name": "metal",
+            "emissions": "13",
+            "unit": "kg/t"
           }
-        ],
-        "tagsPrim": [
-          "a",
-          "b"
-        ],
-        "present": {
-          "path": "value"
-        },
-        "timestamp": 1700000000000,
-        "bar": "root"
+        ]
       },
       "variables": {
-        "Link": "https://example.com"
+        "Goal": 10
       },
-      "expected": "## Bracketed Keys\n\nQuoted key: EdgeName\n\n## Case-Insensitive Filter\n\nAlice\n\n## Inline If with Nested Value\n\nStatus: ready\n\n## Highlight in Links\n\nSee [Docs](https://example.com) and <a href=\"https://example.com\">link</a>\n\n## Set-Only Line\n\nAbove\nBelow\n\n## Condense Cleanup\n\n(kept,)\n\n## Success / Failure\n\nfallback\nok\n\n## Invalid Date + Time\n\n[invalid time]\n\n## List Blank Suppression\n\n- First\n- Second\n\n## Humble and Const\n\nbar: root\n\nbaz: 1\n\nqux: 2\n\n## Primitive Loop Join\n\na, b\n"
+      "expected": "# Example\n\nVERSO Group, \n06.02.2026\n\nThese are the emissions from the products used for the House in the woods.\n- *Concrete*: 1.2 kg/t -\nProduces sufficiently minimal emissions.\n- *Wood*: 0.1 kg/t -\nProduces sufficiently minimal emissions.\n- *Metal*: 13 kg/t -\n_We strive to reduce emissions below 10_.\n"
     }
   ]
 }

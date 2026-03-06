@@ -21,6 +21,7 @@ const colors = {
   yellow: (s) => `\x1b[33m${s}\x1b[0m`,
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
 };
+const fmtMs = (ms) => colors.dim(` ${ms}ms`);
 
 const FIXTURE_DIR = path.join(__dirname, '../fixtures');
 
@@ -69,38 +70,45 @@ function diffStrings(expected, actual) {
     .join('\n');
 }
 
-function runFixture(fixture, { update }) {
+function runFixture(fixture, { update, diff, diffOnly = false }) {
   const { base, template, data, variables, expected, outPath } = fixture;
+  const start = process.hrtime.bigint();
   const result = render(template, data, { variables });
+  const elapsedMs = Math.max(0, Math.round(Number(process.hrtime.bigint() - start) / 1e6));
   const actual = result.markdown.endsWith('\n') ? result.markdown : result.markdown + '\n';
 
   if (update) {
     fs.writeFileSync(outPath, actual, 'utf8');
-    console.log(`${colors.yellow('↻')} updated ${path.relative(process.cwd(), outPath)}`);
-    return true;
+    console.log(`${colors.yellow('↻')} updated ${path.relative(process.cwd(), outPath)}${fmtMs(elapsedMs)}`);
+    return { ok: true, ms: elapsedMs };
   }
 
   if (expected == null) {
-    console.error(`${colors.red('✗')} missing expected output: ${path.relative(process.cwd(), outPath)}`);
-    return false;
+    console.error(`${colors.red('✗')} missing expected output: ${path.relative(process.cwd(), outPath)}${fmtMs(elapsedMs)}`);
+    return { ok: false, ms: elapsedMs };
   }
 
   // Normalize trailing newline for comparison
   const expNorm = expected.endsWith('\n') ? expected : expected + '\n';
   if (expNorm === actual) {
-    console.log(`${colors.green('✓')} ${base}`);
-    return true;
+    console.log(`${colors.green('✓')} ${base}${fmtMs(elapsedMs)}`);
+    return { ok: true, ms: elapsedMs };
   }
 
-  console.error(`${colors.red('✗')} ${base}`);
-  console.error(diffStrings(expNorm, actual));
-  return false;
+  if (!diffOnly) console.error(`${colors.red('✗')} ${base}${fmtMs(elapsedMs)}`);
+  if (diff) {
+    console.error(diffStrings(expNorm, actual));
+  }
+  return { ok: false, ms: elapsedMs };
 }
 
 function main() {
   const args = process.argv.slice(2);
   const wantsUpdate = args.includes('update');
-  const key = args.find((a) => a !== 'update') || null;
+  const wantsDiff = args.includes('diff');
+  const diffOnly = args.includes('diff-only');
+  const noSummary = args.includes('no-summary');
+  const key = args.find((a) => a !== 'update' && a !== 'diff' && a !== 'diff-only' && a !== 'no-summary') || null;
 
   const all = listFixtures();
   const selected = key ? all.filter((b) => b.startsWith(key)) : all;
@@ -112,16 +120,31 @@ function main() {
   let ok = true;
   let count = 0;
   let failed = 0;
+  let totalMs = 0;
+  let passMs = 0;
+  let failMs = 0;
+  let passCount = 0;
   for (const base of selected) {
     const fixture = loadFixture(base);
-    const res = runFixture(fixture, { update: wantsUpdate });
+    const res = runFixture(fixture, { update: wantsUpdate, diff: wantsDiff, diffOnly });
     count++;
-    if (!res) failed++;
-    ok = ok && res;
+    totalMs += res.ms;
+    if (!res.ok) {
+      failed++;
+      failMs += res.ms;
+    } else {
+      passCount++;
+      passMs += res.ms;
+    }
+    ok = ok && res.ok;
   }
-  if (!wantsUpdate) {
-    if (ok) console.log(`${colors.green('✔ pass')} (${count}/${count} passed)`);
-    else console.error(`${colors.red('✖ fail')} (${failed}/${count} failed)`);
+  if (!wantsUpdate && !noSummary) {
+    if (failed === 0) {
+      console.log(`${colors.green(`✔ pass: ${count}/${count}`)}${fmtMs(totalMs)}`);
+    } else {
+      console.log(`${colors.green(`✓ pass: ${passCount}/${count}`)}${fmtMs(passMs)}`);
+      console.log(`${colors.red(`✖ fail: ${failed}/${count}`)}${fmtMs(failMs)}`);
+    }
   }
   if (!ok && !wantsUpdate) process.exit(1);
 }

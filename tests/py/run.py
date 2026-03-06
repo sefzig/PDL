@@ -7,6 +7,8 @@ and exits non-zero on mismatch. No external deps required.
 
 import json
 import sys
+import time
+import difflib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -54,11 +56,25 @@ def load_fixtures(prefix=None):
 
 
 def main():
-    prefix = sys.argv[1] if len(sys.argv) > 1 else None
+    args = sys.argv[1:]
+    wants_diff = "diff" in args
+    diff_only = "diff-only" in args
+    no_summary = "no-summary" in args
+    prefix = None
+    for a in args:
+        if a in ("diff", "diff-only", "no-summary"):
+            continue
+        prefix = a
+        break
     failed = 0
     total = 0
+    total_ms = 0
+    pass_ms = 0
+    fail_ms = 0
+    pass_count = 0
     for name, data, template, variables in load_fixtures(prefix):
         total += 1
+        start = time.perf_counter()
         try:
             result = render(template, data, {"variables": variables})
             markdown = result["markdown"] if isinstance(result, dict) else result
@@ -68,20 +84,46 @@ def main():
 
             actual_norm = markdown if markdown.endswith("\n") else markdown + "\n"
             expected_norm = expected if expected.endswith("\n") else expected + "\n"
+            elapsed_ms = int((time.perf_counter() - start) * 1000)
+            total_ms += elapsed_ms
 
             if actual_norm != expected_norm:
                 failed += 1
-                print(f"{red('✗')} {name}")
+                if not diff_only:
+                    print(f"{red('✗')} {name}\033[2m {elapsed_ms}ms\033[0m")
+                if wants_diff:
+                    diff = "\n".join(
+                        difflib.unified_diff(
+                            expected_norm.splitlines(),
+                            actual_norm.splitlines(),
+                            lineterm="",
+                        )
+                    )
+                    if diff:
+                        dim = "\033[2m"
+                        reset = "\033[0m"
+                        print(f"{dim}{diff}{reset}")
+                fail_ms += elapsed_ms
             else:
-                print(f"{green('✓')} {name}")
+                if not diff_only:
+                    print(f"{green('✓')} {name}\033[2m {elapsed_ms}ms\033[0m")
+                pass_ms += elapsed_ms
+                pass_count += 1
         except Exception as exc:  # pylint: disable=broad-except
             failed += 1
-            print(f"{red('✗')} {name} (error: {exc})")
+            elapsed_ms = int((time.perf_counter() - start) * 1000)
+            total_ms += elapsed_ms
+            if not diff_only:
+                print(f"{red('✗')} {name} (error: {exc})\033[2m {elapsed_ms}ms\033[0m")
+            fail_ms += elapsed_ms
 
-    if failed:
-        print(f"\n{red('✖ fail')} ({failed}/{total} failed)")
-        sys.exit(1)
-    print(f"{green('✔ pass')} ({total}/{total} passed)")
+    if not no_summary:
+        if failed:
+            print(f"{green(f'✓ pass: {pass_count}/{total}')} \033[2m{pass_ms}ms\033[0m")
+            print(f"{red(f'✖ fail: {failed}/{total}')} \033[2m{fail_ms}ms\033[0m")
+            sys.exit(1)
+        print(f"{green(f'✔ pass: {total}/{total}')} \033[2m{total_ms}ms\033[0m")
+    sys.exit(0 if failed == 0 else 1)
 
 
 if __name__ == "__main__":
