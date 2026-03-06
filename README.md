@@ -77,21 +77,26 @@ Flags for language and fixtures can be combined freely.
 
 Golden output tests can be run accross the fixtures:
 - Test all fixtures and languages: `make test`
+- Test all fixtures in Go:         `make test go`
 - Test all fixtures in Javascript: `make test js`
-- Test all fixtures with Python:   `make test py`
 - Test all fixtures with PHP:      `make test php`
-- Show diffs on failures:          `make test diff` (or `make test go diff`, etc.)
+- Test all fixtures with Python:   `make test py`
 - Test a specific fixture:         `make test 01`
 - Test specific fixtures:          `make test 01 03`
-- Test and update fixture results: `make test update`
+- Show diffs on failures:          `make test diff`
+- Update fixture results:          `make test update`
 
 If no language is chosen, the commands default to `js`.
+Flags for language, fixtures, diffs, and updates can be combined freely.
 `update` is risky, only use it when you are certain the libraries are ok.
-Flags for language, fixtures, and updates can be combined freely.
 
 # Integrations
 
 The library can be included in other apps and systems. 
+
+## Go
+
+There is no Go adapter yet.
 
 ## Javascript
 
@@ -120,6 +125,14 @@ Build and add:
 2) Add `dist/browser.js` to your app
 3) Load it via <script> tag.
 
+## PHP
+
+### Form
+
+A barebones PHP reference lives at `adapters/form/index.php`. It requires `packages/php/src/pdl.php`, reads `tests/fixtures/00_hello-world.template.md`, `.data.json`, and `.variables.json` for its defaults, submits to itself via GET, and shows rendered Markdown plus plain-text errors. Adjust the require path if you move the PHP engine.
+
+> VSC: To run the form, enter `php -S localhost:8000 -t adapters/form` in a VSC Terminal and follow instructions. Requires PHP CLI installed.
+
 ## Python
 
 ### Langflow
@@ -138,14 +151,6 @@ Build and add:
 1) `make build langflow` to regenerate `dist/langflow.py`.
 2) Import `dist/langflow.py` into Langflow (e.g., Components → Upload in the UI, or place the file in your Langflow `components/` directory and restart).
 
-## PHP
-
-### Form
-
-A barebones PHP reference lives at `adapters/form/index.php`. It requires `packages/php/src/pdl.php`, reads `tests/fixtures/00_hello-world.template.md`, `.data.json`, and `.variables.json` for its defaults, submits to itself via GET, and shows rendered Markdown plus plain-text errors. Adjust the require path if you move the PHP engine.
-
-> VSC: To run the form, enter `php -S localhost:8000 -t adapters/form` in a VSC Terminal and follow instructions. Requires PHP CLI installed.
-
 # Playground 
 
 In the playground, you can test all PDL fixtures and work on your Custom one.
@@ -154,7 +159,7 @@ In the playground, you can test all PDL fixtures and work on your Custom one.
 
 Run `make build playground` to produce a browser bundle and a fixtures manifest. 
 
-The build emits two manifests:
+The build emits two fixtures manifests:
 - `playground/fixtures.json` — gitignore-filtered fixtures
 - `playground/fixtures-local.json` — all local fixtures including gitignored ones
 
