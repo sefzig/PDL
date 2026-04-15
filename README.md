@@ -18,9 +18,11 @@ adapters/    # Automation integrations
 - n8n/       # n8n code-node code
 - langflow/  # Langflow component code
 dist/        # Built artifacts ready to use
-packages/
-- js/src/    # JavaScript PDL library
-- py/pdl/    # Python PDL library
+packages/    # Libraries to use
+- go/src/    # PDL library for Go
+- js/src/    # PDL library for Javascript
+- php/src/   # PDL library for PHP
+- py/pdl/    # PDL library for Python
 playground/  # A webapp providing an live editor
 scripts/     # Helper scripts for builds/tests
 tests/
